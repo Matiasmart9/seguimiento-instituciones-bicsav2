@@ -64,13 +64,17 @@ const Header = ({ onAddInstitution, onLogout, institutions }) => {
         'Último Comentario': getLastComment(inst)
       });
 
-      // Filtrar instituciones por categoría
+      // Filtrar instituciones por categoría y estado
       const mipymes = institutions
         .filter(i => i.categoria === 'MiPymes' && i.estado === 'Validación de XML')
         .map(prepareInstitutionData);
 
       const premium = institutions
         .filter(i => i.categoria === 'Premium' && i.estado === 'Validación de XML')
+        .map(prepareInstitutionData);
+
+      const activas = institutions
+        .filter(i => i.estado === 'Activo')
         .map(prepareInstitutionData);
 
       const suspendidas = institutions
@@ -97,6 +101,9 @@ const Header = ({ onAddInstitution, onLogout, institutions }) => {
       }, {
         'Métrica': 'Revalidación Inst. Activas',
         'Cantidad': revalidacion.length
+      }, {
+        'Métrica': 'Activas',
+        'Cantidad': activas.length
       }, {
         'Métrica': 'Suspendidas',
         'Cantidad': suspendidas.length
@@ -127,6 +134,11 @@ const Header = ({ onAddInstitution, onLogout, institutions }) => {
         XLSX.utils.book_append_sheet(wb, wsPremium, 'Premium');
       }
 
+      if (activas.length > 0) {
+        const wsActivas = XLSX.utils.json_to_sheet(activas);
+        XLSX.utils.book_append_sheet(wb, wsActivas, 'Activas');
+      }
+
       if (revalidacion.length > 0) {
         const wsRevalidacion = XLSX.utils.json_to_sheet(revalidacion);
         XLSX.utils.book_append_sheet(wb, wsRevalidacion, 'Revalidación');
@@ -151,23 +163,22 @@ const Header = ({ onAddInstitution, onLogout, institutions }) => {
   };
 
   return (
-    <header className="bg-white shadow-md p-4 flex justify-between items-center mb-6">
-      <h1 className="text-3xl font-bold text-gray-800">Seguimiento de Instituciones</h1>
+    <header className="bg-[#fa8b31] shadow-md p-4 flex justify-between items-center mb-6">
+      <h1 className="text-3xl font-bold text-white">Seguimiento Instituciones BICSA</h1>
       <div className="flex items-center gap-4">
-        <button
-          onClick={exportToExcel}
-          className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-transform duration-200 hover:scale-105"
-          title="Exportar a Excel"
-        >
-          <ExcelIcon />
-          <span>Exportar Excel</span>
-        </button>
         <button
           onClick={onAddInstitution}
           className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-transform duration-200 hover:scale-105"
         >
           <PlusIcon />
           <span>Agregar Institución</span>
+        </button>
+        <button
+          onClick={exportToExcel}
+          className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-transform duration-200 hover:scale-105"
+        >
+          <ExcelIcon />
+          <span>Exportar Excel</span>
         </button>
         <button
           onClick={onLogout}

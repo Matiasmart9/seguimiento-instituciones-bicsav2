@@ -28,33 +28,40 @@ const DeleteIcon = () => (
 const InstitutionCard = ({ institution, onEdit, onFollowUp, onDelete }) => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  const getStatusPillClass = (institution) => {
-    if (institution.estado === 'Suspendida') {
-      return 'bg-yellow-200 text-yellow-800';
-    }
-    
-    if (institution.estado === 'Validación de XML' || institution.estado === 'Revalidación de XML') {
-      const alertStatus = getAlertStatus(institution.fechaVencimiento);
-      if (alertStatus) {
-        switch (alertStatus.type) {
-          case 'expired': return 'bg-red-200 text-red-800';
-          case 'critical': return 'bg-orange-200 text-orange-800';
-          case 'warning': return 'bg-orange-100 text-orange-800';
-          default: return 'bg-green-200 text-green-800';
-        }
+const getStatusPillClass = (institution) => {
+  if (institution.estado === 'Suspendida') {
+    return 'bg-yellow-200 text-yellow-800';
+  }
+  
+  if (institution.estado === 'Activo') {
+    return 'bg-green-200 text-green-800';
+  }
+  
+  if (institution.estado === 'Validación de XML' || institution.estado === 'Revalidación de XML') {
+    const alertStatus = getAlertStatus(institution.fechaVencimiento);
+    if (alertStatus) {
+      switch (alertStatus.type) {
+        case 'expired': return 'bg-red-200 text-red-800';
+        case 'critical': return 'bg-orange-200 text-orange-800';
+        case 'warning': return 'bg-orange-100 text-orange-800';
+        default: return 'bg-green-200 text-green-800';
       }
     }
-    
-    return 'bg-gray-200 text-gray-800';
-  };
+  }
+  
+  return 'bg-gray-200 text-gray-800';
+};
 
-  const getDateInfo = (institution) => {
-    if (institution.estado === 'Validación de XML' || institution.estado === 'Revalidación de XML') {
-      const alertStatus = getAlertStatus(institution.fechaVencimiento);
-      return alertStatus ? alertStatus.text : null;
-    }
-    return null;
-  };
+const getDateInfo = (institution) => {
+  if (institution.estado === 'Validación de XML' || institution.estado === 'Revalidación de XML') {
+    const alertStatus = getAlertStatus(institution.fechaVencimiento);
+    return alertStatus ? alertStatus.text : null;
+  }
+  if (institution.estado === 'Activo' && institution.fechaVencimiento) {
+    return `En producción desde ${new Date(institution.fechaVencimiento + 'T00:00:00').toLocaleDateString()}`;
+  }
+  return null;
+};
 
   const handleDeleteClick = () => {
     setShowDeleteModal(true);

@@ -45,6 +45,7 @@ function App() {
         i.estado === 'Validación de XML' && i.categoria === 'Premium'
       ).length,
       revalidacion: institutions.filter(i => i.estado === 'Revalidación de XML').length,
+      activas: institutions.filter(i => i.estado === 'Activo').length, // NUEVO KPI
       suspended: institutions.filter(i => i.estado === 'Suspendida').length,
       expired: institutions.filter(i => {
         if (!i.fechaVencimiento) return false;
@@ -169,6 +170,7 @@ function App() {
           <KpiCard title="Valid. XML MiPymes" value={kpiData.validacionMipymes} color="#16A34A" icon="📊" />
           <KpiCard title="Valid. xml Premium" value={kpiData.validacionPremium} color="#059669" icon="⭐" />
           <KpiCard title="Revalidación Inst. Activas" value={kpiData.revalidacion} color="#CA8A04" icon="🔄" />
+          <KpiCard title="Activas" value={kpiData.activas} color="#10B981" icon="✅" /> {/* NUEVO KPI */}
           <KpiCard title="Suspendidas" value={kpiData.suspended} color="#F59E0B" icon="⏸️" />
           <KpiCard title="Vencidas" value={kpiData.expired} color="#DC2626" icon="⚠️" />
         </div>

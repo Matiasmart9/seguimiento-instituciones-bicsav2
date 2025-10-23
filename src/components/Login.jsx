@@ -41,33 +41,33 @@ const Login = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F8F7F4]">
+    <div className="min-h-screen flex items-center justify-center bg-gray-600">
       <div className="bg-white p-8 rounded-lg shadow-lg w-96">
-        <h2 className="text-2xl font-bold text-[#004C97] mb-6 text-center">
+        <h2 className="text-2xl font-bold text-[#0c0c0c]  mb-6 text-center">
           Seguimiento XML Instituciones BICSA
         </h2>
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Correo electrónico
+            <label className="block text-sm font-bold text-gray-700 mb-1">
+              📄Correo  
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#004C97]"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#fa8b31]"
               required
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Contraseña
+              🛡️Contraseña
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#004C97]"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#fa8b31]"
               required
             />
           </div>
@@ -79,7 +79,7 @@ const Login = ({ onLogin }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#004C97] text-white py-2 rounded-md hover:bg-[#003366] transition-colors disabled:opacity-50 flex items-center justify-center"
+            className="w-full bg-[#fa8b31] text-white py-2 rounded-md hover:bg-[#e96a02] transition-colors disabled:opacity-50 flex items-center justify-center"
           >
             {loading ? (
               <>
@@ -88,8 +88,11 @@ const Login = ({ onLogin }) => {
               </>
             ) : (
               'Iniciar Sesión'
-            )}
+            )}           
           </button>
+            <label className="block text-sm font-medium text-gray-700 mb-1 text-center">
+              V1.0
+            </label>          
         </form>
       </div>
     </div>

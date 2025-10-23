@@ -6,12 +6,12 @@ const AlertPanel = ({ institutions }) => {
   
   // CORREGIDO: Mostrar instituciones vencidas y por vencer (hasta 8 días)
   const criticalInstitutions = institutions.filter(inst => {
-    if (inst.estado !== 'Validación de XML' && inst.estado !== 'Revalidación de XML') return false;
+    if (inst.estado === 'Activo' || inst.estado === 'Suspendida') return false;
     if (!inst.fechaVencimiento) return false;
     
     const daysUntil = getDaysUntil(inst.fechaVencimiento);
     // MOSTRAR: vencidas (días < 0) Y por vencer (0-8 días)
-    return daysUntil <= 8; // ← CAMBIADO de 5 a 8
+    return daysUntil <= 8;
   }).sort((a, b) => {
     const daysA = getDaysUntil(a.fechaVencimiento);
     const daysB = getDaysUntil(b.fechaVencimiento);

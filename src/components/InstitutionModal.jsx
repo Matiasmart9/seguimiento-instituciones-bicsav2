@@ -79,6 +79,7 @@ const InstitutionModal = ({ isOpen, onClose, onSave, institution }) => {
               >
                 <option value="Validación de XML">Validación de XML</option>
                 <option value="Revalidación de XML">Revalidación de XML</option>
+                <option value="Activo">Activo</option>
                 <option value="Suspendida">Suspendida</option>
               </select>
             </div>
@@ -101,6 +102,17 @@ const InstitutionModal = ({ isOpen, onClose, onSave, institution }) => {
                 type="text" 
                 name="motivoSuspension" 
                 value={formData.motivoSuspension || ''} 
+                onChange={handleChange} 
+                className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
+              />
+            </div>
+          ) : formData.estado === 'Activo' ? (
+            <div>
+              <label className="block font-semibold mb-2">Fecha Primera Carga Producción</label>
+              <input 
+                type="date" 
+                name="fechaVencimiento" 
+                value={formData.fechaVencimiento || ''} 
                 onChange={handleChange} 
                 className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" 
               />
