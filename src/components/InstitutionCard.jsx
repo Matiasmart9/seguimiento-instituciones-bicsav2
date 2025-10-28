@@ -49,7 +49,7 @@ const getStatusPillClass = (institution) => {
     }
   }
   
-  return 'bg-gray-200 text-gray-800';
+  return 'bg-gray-200 text-gray-800 dark:text-white';
 };
 
 const getDateInfo = (institution) => {
@@ -81,16 +81,14 @@ const getDateInfo = (institution) => {
 
   return (
     <>
-      <div className="bg-white rounded-lg shadow-md p-5 flex flex-col justify-between hover:shadow-xl transition-shadow duration-300 h-full">
-        <div>
-          <div className="flex justify-between items-start mb-2">
-            <h3 className="text-xl font-bold text-gray-800">{institution.nombre}</h3>
-            <span className={`px-3 py-1 text-sm font-semibold rounded-full ${statusPillClass}`}>
-              {institution.estado}
-            </span>
-          </div>
-          <p className="text-sm text-gray-500 mb-4">{institution.categoria}</p>
-          <div className="text-sm text-gray-600 space-y-2">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 flex flex-col justify-between hover:shadow-xl transition-shadow duration-300 h-full border border-gray-200 dark:border-gray-700">
+          <div>
+            <div className="flex justify-between items-start mb-2">
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white">{institution.nombre}</h3>
+              {/* ... */}
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{institution.categoria}</p>
+            <div className="text-sm text-gray-600 dark:text-gray-300 space-y-2">
             <p><strong>Fecha de Ingreso:</strong> {new Date(institution.fechaIngreso + 'T00:00:00').toLocaleDateString()}</p>
             {institution.motivoSuspension && <p><strong>Motivo:</strong> {institution.motivoSuspension}</p>}
             {dateInfo && (
@@ -99,7 +97,7 @@ const getDateInfo = (institution) => {
                   statusPillClass.includes('red') ? 'text-red-800' :
                   statusPillClass.includes('orange') ? 'text-orange-800' :
                   statusPillClass.includes('green') ? 'text-green-800' :
-                  'text-gray-800'
+                  'text-gray-800 dark:text-white'
                 }>
                   {dateInfo}
                 </strong>

@@ -39,8 +39,8 @@ const InstitutionModal = ({ isOpen, onClose, onSave, institution }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white rounded-lg shadow-2xl p-8 w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-8 w-full max-w-lg relative max-h-[90vh] overflow-y-auto">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 dark:text-white">
           <CloseIcon />
         </button>
         <h2 className="text-2xl font-bold mb-6">{institution ? 'Editar' : 'Agregar'} Institución</h2>
@@ -133,7 +133,7 @@ const InstitutionModal = ({ isOpen, onClose, onSave, institution }) => {
             <button 
               type="button" 
               onClick={onClose} 
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg transition-colors"
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 dark:text-white font-bold py-2 px-4 rounded-lg transition-colors"
             >
               Cancelar
             </button>

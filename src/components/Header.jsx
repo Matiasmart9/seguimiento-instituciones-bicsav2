@@ -1,5 +1,6 @@
 import React from 'react';
 import * as XLSX from 'xlsx';
+import ThemeToggle from './ThemeToggle';
 
 const PlusIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -163,9 +164,10 @@ const Header = ({ onAddInstitution, onLogout, institutions }) => {
   };
 
   return (
-    <header className="bg-[#fa8b31] shadow-md p-4 flex justify-between items-center mb-6">
+    <header className="bg-[#fa8b31] dark:bg-orange-800 shadow-md p-4 flex justify-between items-center mb-6">
       <h1 className="text-3xl font-bold text-white">Seguimiento Instituciones BICSA</h1>
       <div className="flex items-center gap-4">
+        <ThemeToggle />
         <button
           onClick={onAddInstitution}
           className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-transform duration-200 hover:scale-105"

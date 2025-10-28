@@ -39,7 +39,7 @@ const AlertPanel = ({ institutions }) => {
       case 'expired': return 'bg-red-100 border-red-300 text-red-800';
       case 'critical': return 'bg-orange-100 border-orange-300 text-orange-800';
       case 'warning': return 'bg-yellow-100 border-yellow-300 text-yellow-800';
-      default: return 'bg-gray-100 border-gray-300 text-gray-800';
+      default: return 'bg-gray-100 border-gray-300 text-gray-800 dark:text-white';
     }
   };
 
@@ -64,7 +64,7 @@ const AlertPanel = ({ institutions }) => {
   }).length;
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 mb-6 border-l-4 border-red-500">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 border-l-4 border-red-500">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <span className="text-2xl">🔴</span>

@@ -47,8 +47,8 @@ const FollowUpModal = ({ isOpen, onClose, institution, onAddComment }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white rounded-lg shadow-2xl p-8 w-full max-w-2xl relative flex flex-col" style={{height: '80vh'}}>
-        <button onClick={handleClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
+      <div className="bg-gray-800 rounded-lg shadow-2xl p-8 w-full max-w-2xl relative flex flex-col" style={{height: '80vh'}}>
+        <button onClick={handleClose} className="absolute top-4 right-4 text-gray-500 hover:text-white">
           <CloseIcon />
         </button>
         <h2 className="text-2xl font-bold mb-2">
@@ -61,7 +61,7 @@ const FollowUpModal = ({ isOpen, onClose, institution, onAddComment }) => {
             <div className="space-y-4">
               {[...institution.comentarios].reverse().map((comment, index) => (
                 <div key={index} className="bg-gray-100 p-3 rounded-md">
-                  <p className="text-gray-800">{comment.texto}</p>
+                  <p className="text-white">{comment.texto}</p>
                   <p className="text-xs text-gray-500 mt-1 text-right">
                     Por <strong>{comment.autor}</strong> el {new Date(comment.fecha).toLocaleString()}
                   </p>

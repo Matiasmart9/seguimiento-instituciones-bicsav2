@@ -161,7 +161,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <Header onAddInstitution={handleOpenAddModal} onLogout={handleLogout} institutions={institutions} />
       <main className="container mx-auto p-6">
         {/* Dashboard KPIs */}
@@ -199,7 +199,7 @@ function App() {
               </p>
               <button 
                 onClick={handleOpenAddModal}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+                className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"
               >
                 Agregar Primera Institución
               </button>
