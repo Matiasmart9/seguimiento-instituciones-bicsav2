@@ -212,9 +212,9 @@ const Login = ({ onLogin }) => {
         noiseIntensity={0.03}
         scanlineIntensity={0.15}
         speed={1.0}
-        scanlineFrequency={1.9}
+        scanlineFrequency={1.5}
         warpAmount={0.5}
-        resolutionScale={2} // Cambiar a 1 para mejor rendimiento
+        resolutionScale={1} // Cambiar a 1 para mejor rendimiento
       />
     </div>
     
