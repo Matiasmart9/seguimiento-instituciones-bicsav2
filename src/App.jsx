@@ -44,8 +44,11 @@ function App() {
       validacionPremium: institutions.filter(i => 
         i.estado === 'Validación de XML' && i.categoria === 'Premium'
       ).length,
+      validacionPremiumPortal: institutions.filter(i => 
+        i.estado === 'Validación de XML' && i.categoria === 'Premium/Portal-MiPymes'
+      ).length, // NUEVO KPI
       revalidacion: institutions.filter(i => i.estado === 'Revalidación de XML').length,
-      activas: institutions.filter(i => i.estado === 'Activo').length, // NUEVO KPI
+      activas: institutions.filter(i => i.estado === 'Activo').length,
       suspended: institutions.filter(i => i.estado === 'Suspendida').length,
       expired: institutions.filter(i => {
         if (!i.fechaVencimiento) return false;
@@ -165,15 +168,16 @@ function App() {
       <Header onAddInstitution={handleOpenAddModal} onLogout={handleLogout} institutions={institutions} />
       <main className="container mx-auto p-6">
         {/* Dashboard KPIs */}
-        <div className="flex flex-wrap justify-center gap-3 mb-8 px-2">
-          <KpiCard title="Total" value={kpiData.total} color="#1D4ED8" icon="🏢" />
-          <KpiCard title="Valid. XML MiPymes" value={kpiData.validacionMipymes} color="#16A34A" icon="📊" />
-          <KpiCard title="Valid. xml Premium" value={kpiData.validacionPremium} color="#059669" icon="⭐" />
-          <KpiCard title="Revalidación Inst. Activas" value={kpiData.revalidacion} color="#CA8A04" icon="🔄" />
-          <KpiCard title="Activas" value={kpiData.activas} color="#10B981" icon="✅" /> {/* NUEVO KPI */}
-          <KpiCard title="Suspendidas" value={kpiData.suspended} color="#F59E0B" icon="⏸️" />
-          <KpiCard title="Vencidas" value={kpiData.expired} color="#DC2626" icon="⚠️" />
-        </div>
+          <div className="flex flex-wrap justify-center gap-3 mb-8 px-2">
+            <KpiCard title="Total" value={kpiData.total} color="#1D4ED8" icon="🏢" />
+            <KpiCard title="Valid. XML MiPymes" value={kpiData.validacionMipymes} color="#16A34A" icon="📊" />
+            <KpiCard title="Valid. xml Premium" value={kpiData.validacionPremium} color="#059669" icon="⭐" />
+            <KpiCard title="Valid. Premium/Portal" value={kpiData.validacionPremiumPortal} color="#7C3AED" icon="🌐" /> {/* NUEVO KPI */}
+            <KpiCard title="Revalidación Inst. Activas" value={kpiData.revalidacion} color="#CA8A04" icon="🔄" />
+            <KpiCard title="Activas" value={kpiData.activas} color="#10B981" icon="✅" />
+            <KpiCard title="Suspendidas" value={kpiData.suspended} color="#F59E0B" icon="⏸️" />
+            <KpiCard title="Vencidas" value={kpiData.expired} color="#DC2626" icon="⚠️" />
+          </div>
 
         {/* Panel de Alertas */}
         <AlertPanel institutions={institutions} />

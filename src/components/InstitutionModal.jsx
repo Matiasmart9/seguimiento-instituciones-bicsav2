@@ -67,6 +67,7 @@ const InstitutionModal = ({ isOpen, onClose, onSave, institution }) => {
               >
                 <option value="MiPymes">MiPymes</option>
                 <option value="Premium">Premium</option>
+                <option value="Premium/Portal-MiPymes">Premium/Portal-MiPymes</option>
               </select>
             </div>
             <div>

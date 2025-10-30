@@ -50,6 +50,7 @@ const FilterControls = ({ filters, setFilters }) => {
           <option value="Todos">Todas las Categorías</option>
           <option value="Premium">Premium</option>
           <option value="MiPymes">MiPymes</option>
+          <option value="Premium/Portal-MiPymes">Premium/Portal-MiPymes</option>
         </select>
         <button 
           onClick={() => setFilters({ estado: 'Todos', categoria: 'Todos', search: '' })} 

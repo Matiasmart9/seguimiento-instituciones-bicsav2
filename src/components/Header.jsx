@@ -74,6 +74,10 @@ const Header = ({ onAddInstitution, onLogout, institutions }) => {
         .filter(i => i.categoria === 'Premium' && i.estado === 'Validación de XML')
         .map(prepareInstitutionData);
 
+      const premiumPortal = institutions 
+        .filter(i => i.categoria === 'Premium/Portal-MiPymes' && i.estado === 'Validación de XML')
+        .map(prepareInstitutionData);
+
       const activas = institutions
         .filter(i => i.estado === 'Activo')
         .map(prepareInstitutionData);
@@ -99,6 +103,9 @@ const Header = ({ onAddInstitution, onLogout, institutions }) => {
       }, {
         'Métrica': 'Validación XML Premium',
         'Cantidad': premium.length
+      }, {
+        'Métrica': 'Validación Premium/Portal-MiPymes', 
+        'Cantidad': premiumPortal.length
       }, {
         'Métrica': 'Revalidación Inst. Activas',
         'Cantidad': revalidacion.length
@@ -133,6 +140,11 @@ const Header = ({ onAddInstitution, onLogout, institutions }) => {
       if (premium.length > 0) {
         const wsPremium = XLSX.utils.json_to_sheet(premium);
         XLSX.utils.book_append_sheet(wb, wsPremium, 'Premium');
+      }
+
+      if (premiumPortal.length > 0) { 
+        const wsPremiumPortal = XLSX.utils.json_to_sheet(premiumPortal);
+        XLSX.utils.book_append_sheet(wb, wsPremiumPortal, 'Premium-Portal');
       }
 
       if (activas.length > 0) {
