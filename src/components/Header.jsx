@@ -1,6 +1,7 @@
 import React from 'react';
 import * as XLSX from 'xlsx';
 import ThemeToggle from './ThemeToggle';
+import WeatherWidget from './WeatherWidget';
 
 const PlusIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -176,8 +177,16 @@ const Header = ({ onAddInstitution, onLogout, institutions }) => {
   };
 
   return (
-    <header className="bg-[#fa8b31] dark:bg-orange-800 shadow-md p-4 flex justify-between items-center mb-6">
-      <h1 className="text-3xl font-bold text-white">Seguimiento Instituciones BICSA</h1>
+    <header className="bg-[#fa8b31] dark:bg-orange-800 shadow-md p-5 flex justify-between items-center mb-2 relative">
+      {/* Widget del clima en la esquina superior izquierda */}
+      <div className="absolute top-2 left-5 z-10">
+        <WeatherWidget />
+      </div>
+      
+      <div className="flex items-center justify-center flex-1">
+        <h1 className="text-3xl font-bold text-white">Seguimiento Instituciones BICSA</h1>
+      </div>
+      
       <div className="flex items-center gap-4">
         <ThemeToggle />
         <button

@@ -34,3 +34,15 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
+
+:root {
+  --search-bg: #010201;
+  --search-text: white;
+  --search-placeholder: #c0b9c0;
+}
+
+[data-theme="light"] {
+  --search-bg: #f8f9fa;
+  --search-text: #333;
+  --search-placeholder: #666;
+}

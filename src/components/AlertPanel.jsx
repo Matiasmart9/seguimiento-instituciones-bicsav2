@@ -24,22 +24,22 @@ const AlertPanel = ({ institutions }) => {
 
   if (criticalInstitutions.length === 0) {
     return (
-      <div className="bg-green-50 rounded-lg shadow-md p-6 mb-6 border-l-4 border-green-500">
+      <div className="bg-green-50 dark:bg-green-900 rounded-lg shadow-md p-6 mb-6 border-l-4 border-green-500">
         <div className="flex items-center gap-3">
           <span className="text-2xl">✅</span>
-          <h2 className="text-xl font-bold text-green-700">Estado de Validaciones</h2>
+          <h2 className="text-xl font-bold text-green-700 dark:text-green-300">Estado de Validaciones</h2>
         </div>
-        <p className="text-green-600 mt-2">No hay validaciones críticas en este momento.</p>
+        <p className="text-green-600 dark:text-green-400 mt-2">No hay validaciones críticas en este momento.</p>
       </div>
     );
   }
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'expired': return 'bg-red-100 border-red-300 text-red-800';
-      case 'critical': return 'bg-orange-100 border-orange-300 text-orange-800';
-      case 'warning': return 'bg-yellow-100 border-yellow-300 text-yellow-800';
-      default: return 'bg-gray-100 border-gray-300 text-gray-800 dark:text-white';
+      case 'expired': return 'bg-red-100 dark:bg-red-900 border-red-300 dark:border-red-700 text-red-800 dark:text-red-200';
+      case 'critical': return 'bg-orange-100 dark:bg-orange-900 border-orange-300 dark:border-orange-700 text-orange-800 dark:text-orange-200';
+      case 'warning': return 'bg-yellow-100 dark:bg-yellow-900 border-yellow-300 dark:border-yellow-700 text-yellow-800 dark:text-yellow-200';
+      default: return 'bg-gray-100 dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-gray-800 dark:text-gray-200';
     }
   };
 
@@ -68,21 +68,29 @@ const AlertPanel = ({ institutions }) => {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <span className="text-2xl">🔴</span>
-          <h2 className="text-xl font-bold text-red-700">ALERTA: Validaciones Críticas</h2>
+          <h2 className="text-xl font-bold text-red-700 dark:text-red-400">ALERTA: Validaciones Críticas</h2>
         </div>
-        <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-semibold">
+        <span className="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 px-3 py-1 rounded-full text-sm font-semibold">
           {criticalInstitutions.length} institución{criticalInstitutions.length !== 1 ? 'es' : ''}
         </span>
       </div>
       
-      <div className={`overflow-x-auto ${!showAll && hasMore ? 'max-h-80' : ''} overflow-y-auto`}>
+      <div className={`overflow-x-auto ${!showAll && hasMore ? 'max-h-80' : ''} overflow-y-auto relative`}>
         <table className="w-full min-w-full">
           <thead>
-            <tr className="border-b-2 border-gray-200 bg-gray-50">
-              <th className="text-left py-3 font-semibold px-4">Institución</th>
-              <th className="text-left py-3 font-semibold px-4">Vencimiento</th>
-              <th className="text-left py-3 font-semibold px-4">Estado</th>
-              <th className="text-left py-3 font-semibold px-4">Días</th>
+            <tr className="border-b-2 border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+              <th className="text-left py-3 font-semibold px-4 text-gray-800 dark:text-gray-200 sticky top-0 bg-gray-50 dark:bg-gray-900 z-10">
+                Institución
+              </th>
+              <th className="text-left py-3 font-semibold px-4 text-gray-800 dark:text-gray-200 sticky top-0 bg-gray-50 dark:bg-gray-900 z-10">
+                Vencimiento
+              </th>
+              <th className="text-left py-3 font-semibold px-4 text-gray-800 dark:text-gray-200 sticky top-0 bg-gray-50 dark:bg-gray-900 z-10">
+                Estado
+              </th>
+              <th className="text-left py-3 font-semibold px-4 text-gray-800 dark:text-gray-200 sticky top-0 bg-gray-50 dark:bg-gray-900 z-10">
+                Días
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -91,13 +99,13 @@ const AlertPanel = ({ institutions }) => {
               const daysUntil = getDaysUntil(inst.fechaVencimiento);
               
               return (
-                <tr key={inst.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                  <td className="py-3 font-medium px-4">
+                <tr key={inst.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                  <td className="py-3 font-medium px-4 text-gray-800 dark:text-gray-200">
                     <div className="max-w-xs truncate" title={inst.nombre}>
                       {inst.nombre}
                     </div>
                   </td>
-                  <td className="py-3 px-4">
+                  <td className="py-3 px-4 text-gray-700 dark:text-gray-300">
                     {inst.fechaVencimiento ? new Date(inst.fechaVencimiento + 'T00:00:00').toLocaleDateString() : 'N/A'}
                   </td>
                   <td className="py-3 px-4">
@@ -107,9 +115,9 @@ const AlertPanel = ({ institutions }) => {
                   </td>
                   <td className="py-3 px-4">
                     <span className={`font-bold ${
-                      daysUntil < 0 ? 'text-red-600' : 
-                      daysUntil <= 5 ? 'text-orange-600' : // CAMBIADO de 2 a 5
-                      'text-yellow-600'
+                      daysUntil < 0 ? 'text-red-600 dark:text-red-400' : 
+                      daysUntil <= 5 ? 'text-orange-600 dark:text-orange-400' : // CAMBIADO de 2 a 5
+                      'text-yellow-600 dark:text-yellow-400'
                     }`}>
                       {daysUntil < 0 ? Math.abs(daysUntil) + ' días vencidos' : daysUntil + ' días'}
                     </span>
@@ -123,10 +131,10 @@ const AlertPanel = ({ institutions }) => {
 
       {/* Controles para mostrar más/menos */}
       {hasMore && (
-        <div className="flex justify-center mt-4 pt-4 border-t border-gray-200">
+        <div className="flex justify-center mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
           <button
             onClick={() => setShowAll(!showAll)}
-            className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-6 rounded-lg transition-colors flex items-center gap-2"
+            className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium py-2 px-6 rounded-lg transition-colors flex items-center gap-2"
           >
             {showAll ? (
               <>
@@ -148,15 +156,15 @@ const AlertPanel = ({ institutions }) => {
       )}
 
       {/* Resumen rápido CON LOS NUEVOS TEXTOS */}
-      <div className="mt-4 pt-4 border-t border-gray-200">
-        <div className="flex flex-wrap gap-4 text-sm text-gray-600 justify-center">
-          <span className="flex items-center gap-2 bg-red-50 px-3 py-1 rounded-full">
+      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex flex-wrap gap-4 text-sm justify-center">
+          <span className="flex items-center gap-2 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 px-3 py-1 rounded-full">
             <span>🔴</span> Vencidas: {expiredCount}
           </span>
-          <span className="flex items-center gap-2 bg-orange-50 px-3 py-1 rounded-full">
+          <span className="flex items-center gap-2 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-3 py-1 rounded-full">
             <span>🟠</span> Críticas (≤5 días): {criticalCount} {/* CAMBIADO de 2 a 5 */}
           </span>
-          <span className="flex items-center gap-2 bg-yellow-50 px-3 py-1 rounded-full">
+          <span className="flex items-center gap-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-3 py-1 rounded-full">
             <span>🟡</span> Advertencia (6-8 días): {warningCount} {/* CAMBIADO de 3-5 a 6-8 */}
           </span>
         </div>

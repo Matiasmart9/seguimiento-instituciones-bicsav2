@@ -21,7 +21,7 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, confirm
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 w-full max-w-md relative mx-4">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 transition-colors">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white transition-colors">
           <CloseIcon />
         </button>
         
@@ -29,19 +29,19 @@ const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, confirm
           <div className="mx-auto w-12 h-12 text-yellow-500 mb-4">
             <WarningIcon />
           </div>
-          <h2 className="text-xl font-bold text-gray-800 mb-2">{title}</h2>
-          <p className="text-gray-600 mb-6">{message}</p>
+          <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-2">{title}</h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">{message}</p>
           
           <div className="flex justify-center gap-4">
             <button
               onClick={onClose}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg transition-colors duration-200"
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white font-bold py-2 px-6 rounded-lg transition-colors duration-200"
             >
               {cancelText}
             </button>
             <button
               onClick={onConfirm}
-              className="bg-red-600 hover:bg-red-700 text-gray-800 dark:text-white font-bold py-2 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
+              className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 6h18"></path>
