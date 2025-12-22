@@ -21,23 +21,47 @@ function App() {
   
   const { institutions, loading: institutionsLoading, addInstitution, updateInstitution, deleteInstitution, addComment } = useInstitutions();
 
-  const filteredInstitutions = useMemo(() => {
-    return institutions.filter(inst => {
-      const estadoMatch = filters.estado === 'Todos' || inst.estado === filters.estado;
+const filteredInstitutions = useMemo(() => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  return institutions.filter(inst => {
+    // ✅ LÓGICA ESPECIAL PARA VENCIDAS
+    if (filters.estado === 'Vencidas') {
+      if (!inst.fechaVencimiento) return false;
+      const dueDate = new Date(inst.fechaVencimiento + 'T00:00:00');
+      const isExpired = (inst.estado === 'Validación de XML' || inst.estado === 'Revalidación de XML') && dueDate < today;
+      
       const categoriaMatch = filters.categoria === 'Todos' || inst.categoria === filters.categoria;
       const searchMatch = !filters.search || 
         inst.nombre.toLowerCase().includes(filters.search.toLowerCase());
       
-      return estadoMatch && categoriaMatch && searchMatch;
-    });
+      return isExpired && categoriaMatch && searchMatch;
+    }
+    
+    // ✅ LÓGICA NORMAL PARA OTROS ESTADOS
+    const estadoMatch = filters.estado === 'Todos' || inst.estado === filters.estado;
+    const categoriaMatch = filters.categoria === 'Todos' || inst.categoria === filters.categoria;
+    const searchMatch = !filters.search || 
+      inst.nombre.toLowerCase().includes(filters.search.toLowerCase());
+    
+    return estadoMatch && categoriaMatch && searchMatch;
+  });
   }, [institutions, filters]);
 
   const kpiData = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
+    // Calcular vencidas primero
+    const expired = institutions.filter(i => {
+      if (!i.fechaVencimiento) return false;
+      const dueDate = new Date(i.fechaVencimiento + 'T00:00:00');
+      return (i.estado === 'Validación de XML' || i.estado === 'Revalidación de XML') && dueDate < today;
+    }).length;
+    
     return {
-      total: institutions.length,
+      total: institutions.length + expired, // ✅ SUMA VENCIDAS TAMBIEN AL TOTAL
       validacionMipymes: institutions.filter(i => 
         i.estado === 'Validación de XML' && i.categoria === 'MiPymes'
       ).length,
@@ -46,15 +70,11 @@ function App() {
       ).length,
       validacionPremiumPortal: institutions.filter(i => 
         i.estado === 'Validación de XML' && i.categoria === 'Premium/Portal-MiPymes'
-      ).length, // NUEVO KPI
+      ).length,
       revalidacion: institutions.filter(i => i.estado === 'Revalidación de XML').length,
       activas: institutions.filter(i => i.estado === 'Activo').length,
       suspended: institutions.filter(i => i.estado === 'Suspendida').length,
-      expired: institutions.filter(i => {
-        if (!i.fechaVencimiento) return false;
-        const dueDate = new Date(i.fechaVencimiento + 'T00:00:00');
-        return (i.estado === 'Validación de XML' || i.estado === 'Revalidación de XML') && dueDate < today;
-      }).length,
+      expired: expired, // Vencidas
     };
   }, [institutions]);
 

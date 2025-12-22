@@ -94,10 +94,18 @@ const Header = ({ onAddInstitution, onLogout, institutions }) => {
       // Crear resumen general
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+
+      const vencidas = institutions
+        .filter(i => {
+          if (!i.fechaVencimiento) return false;
+          const dueDate = new Date(i.fechaVencimiento + 'T00:00:00');
+          return (i.estado === 'Validación de XML' || i.estado === 'Revalidación de XML') && dueDate < today;
+        })
+        .map(prepareInstitutionData);
       
       const resumen = [{
         'Métrica': 'Total de Instituciones',
-        'Cantidad': institutions.length
+        'Cantidad': institutions.length + vencidas.length  // INCLUYE VENCIDAS EN EL TOTAL
       }, {
         'Métrica': 'Validación XML MiPymes',
         'Cantidad': mipymes.length
@@ -118,11 +126,7 @@ const Header = ({ onAddInstitution, onLogout, institutions }) => {
         'Cantidad': suspendidas.length
       }, {
         'Métrica': 'Vencidas',
-        'Cantidad': institutions.filter(i => {
-          if (!i.fechaVencimiento) return false;
-          const dueDate = new Date(i.fechaVencimiento + 'T00:00:00');
-          return (i.estado === 'Validación de XML' || i.estado === 'Revalidación de XML') && dueDate < today;
-        }).length
+        'Cantidad': vencidas.length  // ✅ USA EL ARRAY VENCIDAS
       }];
 
       // Crear libro de Excel
@@ -163,6 +167,10 @@ const Header = ({ onAddInstitution, onLogout, institutions }) => {
         XLSX.utils.book_append_sheet(wb, wsSuspendidas, 'Suspendidas');
       }
 
+      if (vencidas.length > 0) {
+        const wsVencidas = XLSX.utils.json_to_sheet(vencidas);
+        XLSX.utils.book_append_sheet(wb, wsVencidas, 'Vencidas');
+      }
       // Generar nombre de archivo con fecha
       const fileName = `Instituciones_${new Date().toLocaleDateString('es-PY').replace(/\//g, '-')}.xlsx`;
 

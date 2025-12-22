@@ -182,6 +182,7 @@ const FilterControls = ({ filters, setFilters }) => {
           <option value="Revalidación de XML">Revalidación de XML</option>
           <option value="Activo">Activo</option>
           <option value="Suspendida">Suspendida</option>
+          <option value="Vencidas">Vencidas</option>
         </select>
         <select 
           name="categoria" 
