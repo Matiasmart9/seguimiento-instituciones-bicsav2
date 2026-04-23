@@ -1,6 +1,29 @@
 import React from 'react';
 import styled from 'styled-components';
 
+const FilterIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-gray-500 dark:text-gray-400">
+    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+  </svg>
+);
+
+const CategoryIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2 text-gray-500 dark:text-gray-400">
+    <rect x="3" y="3" width="7" height="7"></rect>
+    <rect x="14" y="3" width="7" height="7"></rect>
+    <rect x="14" y="14" width="7" height="7"></rect>
+    <rect x="3" y="14" width="7" height="7"></rect>
+  </svg>
+);
+
+const ClearIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+    <path d="M3 6h18"></path>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+  </svg>
+);
+
 const SearchContainer = styled.div`
   position: relative;
   margin-bottom: 1rem;
@@ -129,7 +152,7 @@ const darkTheme = {
   placeholderColor: '#9ca3af'
 };
 
-const FilterControls = ({ filters, setFilters }) => {
+const FilterControls = ({ filters, setFilters, totalCount }) => {
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters(prev => ({ ...prev, [name]: value }));
@@ -169,36 +192,54 @@ const FilterControls = ({ filters, setFilters }) => {
       </SearchContainer>
 
       {/* Filtros existentes */}
-      <div className="flex flex-wrap items-center gap-4 mt-4">
-        <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300">Filtros:</h3>
-        <select 
-          name="estado" 
-          value={filters.estado} 
-          onChange={handleFilterChange} 
-          className="p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-        >
+      <div className="flex flex-wrap items-center gap-4 mt-4 bg-gray-50 dark:bg-gray-800/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
+        <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">Filtros:</h3>
+        
+        <div className="relative flex items-center bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 px-3 py-1">
+          <FilterIcon />
+          <select 
+            name="estado" 
+            value={filters.estado} 
+            onChange={handleFilterChange} 
+            className="p-1.5 bg-transparent border-none focus:outline-none text-gray-900 dark:text-white cursor-pointer w-full"
+          >
           <option value="Todos">Todos los Estados</option>
           <option value="Validación de XML">Validación de XML</option>
           <option value="Revalidación de XML">Revalidación de XML</option>
           <option value="Activo">Activo</option>
           <option value="Suspendida">Suspendida</option>
           <option value="Vencidas">Vencidas</option>
+          <option value="Sin Renovación Contrato">Sin Renovación Contrato</option>
         </select>
-        <select 
-          name="categoria" 
-          value={filters.categoria} 
-          onChange={handleFilterChange} 
-          className="p-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-        >
+        </div>
+
+        <div className="relative flex items-center bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 px-3 py-1">
+          <CategoryIcon />
+          <select 
+            name="categoria" 
+            value={filters.categoria} 
+            onChange={handleFilterChange} 
+            className="p-1.5 bg-transparent border-none focus:outline-none text-gray-900 dark:text-white cursor-pointer w-full"
+          >
           <option value="Todos">Todas las Categorías</option>
           <option value="Premium">Premium</option>
           <option value="MiPymes">MiPymes</option>
           <option value="Premium/Portal-MiPymes">Premium/Portal-MiPymes</option>
         </select>
+        </div>
+
+        {totalCount !== undefined && (
+          <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-lg border border-blue-200 dark:border-blue-800 font-semibold text-sm shadow-sm ml-auto">
+            <span>Resultados:</span>
+            <span className="bg-blue-600 text-white px-2 py-0.5 rounded-md">{totalCount}</span>
+          </div>
+        )}
+
         <button 
           onClick={() => setFilters({ estado: 'Todos', categoria: 'Todos', search: '' })} 
-          className="text-blue-600 dark:text-blue-400 hover:underline hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+          className="flex items-center text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:border-red-300 dark:hover:border-red-800 px-3 py-2.5 rounded-lg transition-all text-sm font-medium"
         >
+          <ClearIcon />
           Limpiar Filtros
         </button>
       </div>

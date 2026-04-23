@@ -91,6 +91,10 @@ const Header = ({ onAddInstitution, onLogout, institutions }) => {
         .filter(i => i.estado === 'Revalidación de XML')
         .map(prepareInstitutionData);
 
+      const sinRenovacion = institutions
+        .filter(i => i.estado === 'Sin Renovación Contrato')
+        .map(prepareInstitutionData);
+
       // Crear resumen general
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -127,6 +131,9 @@ const Header = ({ onAddInstitution, onLogout, institutions }) => {
       }, {
         'Métrica': 'Vencidas',
         'Cantidad': vencidas.length  // ✅ USA EL ARRAY VENCIDAS
+      }, {
+        'Métrica': 'Sin Renovación Contrato',
+        'Cantidad': sinRenovacion.length
       }];
 
       // Crear libro de Excel
@@ -171,6 +178,11 @@ const Header = ({ onAddInstitution, onLogout, institutions }) => {
         const wsVencidas = XLSX.utils.json_to_sheet(vencidas);
         XLSX.utils.book_append_sheet(wb, wsVencidas, 'Vencidas');
       }
+
+      if (sinRenovacion.length > 0) {
+        const wsSinRenovacion = XLSX.utils.json_to_sheet(sinRenovacion);
+        XLSX.utils.book_append_sheet(wb, wsSinRenovacion, 'Sin Renovación');
+      }
       // Generar nombre de archivo con fecha
       const fileName = `Instituciones_${new Date().toLocaleDateString('es-PY').replace(/\//g, '-')}.xlsx`;
 
@@ -185,17 +197,20 @@ const Header = ({ onAddInstitution, onLogout, institutions }) => {
   };
 
   return (
-    <header className="bg-[#fa8b31] dark:bg-orange-800 shadow-md p-5 flex justify-between items-center mb-2 relative">
+    <header className="bg-gradient-to-r from-[#fa8b31] via-[#f59e0b] to-[#ea580c] dark:from-gray-900 dark:via-orange-900 dark:to-gray-900 shadow-lg p-5 flex justify-between items-center mb-6 relative overflow-hidden">
+      {/* Patrón de fondo sutil */}
+      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white to-transparent pointer-events-none"></div>
+      
       {/* Widget del clima en la esquina superior izquierda */}
       <div className="absolute top-2 left-5 z-10">
         <WeatherWidget />
       </div>
       
-      <div className="flex items-center justify-center flex-1">
-        <h1 className="text-3xl font-bold text-white">Seguimiento Instituciones BICSA</h1>
+      <div className="flex items-center justify-center flex-1 z-10">
+        <h1 className="text-3xl font-bold text-white drop-shadow-md tracking-tight">Seguimiento Instituciones BICSA</h1>
       </div>
       
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 z-10">
         <ThemeToggle />
         <button
           onClick={onAddInstitution}

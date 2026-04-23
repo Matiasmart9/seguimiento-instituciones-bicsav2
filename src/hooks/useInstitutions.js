@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, addDoc, updateDoc, doc, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { useAuth } from './useAuth';
 
@@ -65,6 +65,13 @@ export function useInstitutions() {
     await updateDoc(doc(db, 'institutions', id), institutionData);
   };
 
+  const deleteInstitution = async (id) => {
+    if (!user) throw new Error('Usuario no autenticado');
+
+    console.log('🗑️ Eliminando institución en Firestore:', id, 'por usuario:', user.email);
+    await deleteDoc(doc(db, 'institutions', id));
+  };
+
   const addComment = async (institutionId, commentText) => {
     if (!user) throw new Error('Usuario no autenticado');
 
@@ -94,6 +101,7 @@ export function useInstitutions() {
     loading,
     addInstitution,
     updateInstitution,
+    deleteInstitution,
     addComment
   };
 }

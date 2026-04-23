@@ -9,6 +9,7 @@ const CloseIcon = () => (
 
 const InstitutionModal = ({ isOpen, onClose, onSave, institution }) => {
   const [formData, setFormData] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (institution) {
@@ -23,6 +24,7 @@ const InstitutionModal = ({ isOpen, onClose, onSave, institution }) => {
         motivoSuspension: '',
       });
     }
+    setIsSubmitting(false);
   }, [institution, isOpen]);
 
   if (!isOpen) return null;
@@ -32,9 +34,18 @@ const InstitutionModal = ({ isOpen, onClose, onSave, institution }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave(formData);
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      await onSave(formData);
+    } catch (error) {
+      console.error('Error in modal onSave:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -82,6 +93,7 @@ const InstitutionModal = ({ isOpen, onClose, onSave, institution }) => {
                 <option value="Revalidación de XML">Revalidación de XML</option>
                 <option value="Activo">Activo</option>
                 <option value="Suspendida">Suspendida</option>
+                <option value="Sin Renovación Contrato">Sin Renovación Contrato</option>
               </select>
             </div>
           </div>
@@ -140,9 +152,14 @@ const InstitutionModal = ({ isOpen, onClose, onSave, institution }) => {
             </button>
             <button 
               type="submit" 
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+              disabled={isSubmitting}
+              className={`font-bold py-2 px-4 rounded-lg transition-colors ${
+                isSubmitting 
+                  ? 'bg-blue-400 cursor-not-allowed text-white' 
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+              }`}
             >
-              Guardar
+              {isSubmitting ? 'Guardando...' : 'Guardar'}
             </button>
           </div>
         </form>

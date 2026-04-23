@@ -70,11 +70,13 @@ const getCardColors = (title) => {
   };
 };
 
-const KpiCard = ({ title, value, subtitle, icon }) => {
+const KpiCard = ({ title, value, subtitle, icon, onClick }) => {
   const colors = getCardColors(title);
 
   return (
-    <div className={`
+    <div 
+      onClick={onClick}
+      className={`
       bg-white dark:bg-gray-800 
       ${colors.border} 
       p-4 rounded-lg shadow-sm 

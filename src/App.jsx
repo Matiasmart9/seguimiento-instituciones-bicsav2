@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from './firebase/firebaseConfig';
 import { useAuth } from './hooks/useAuth';
@@ -11,13 +11,28 @@ import InstitutionModal from './components/InstitutionModal';
 import FollowUpModal from './components/FollowUpModal';
 import AlertPanel from './components/AlertPanel';
 import Login from './components/Login';
+import KpiDetailModal from './components/KpiDetailModal';
+
+const EmptyStateIllustration = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-gray-300 dark:text-gray-600 mb-6">
+    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+    <polyline points="21 15 16 10 5 21"></polyline>
+    <circle cx="16" cy="16" r="6" strokeWidth="1.5" className="text-blue-400"></circle>
+    <line x1="16" y1="13" x2="16" y2="19" strokeWidth="1.5" className="text-blue-400"></line>
+    <line x1="13" y1="16" x2="19" y2="16" strokeWidth="1.5" className="text-blue-400"></line>
+  </svg>
+);
 
 function App() {
   const { user, loading: authLoading } = useAuth();
   const [filters, setFilters] = useState({ estado: 'Todos', categoria: 'Todos', search: '' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
   const [isInstitutionModalOpen, setIsInstitutionModalOpen] = useState(false);
   const [isFollowUpModalOpen, setIsFollowUpModalOpen] = useState(false);
   const [selectedInstitution, setSelectedInstitution] = useState(null);
+  const [kpiModalData, setKpiModalData] = useState({ isOpen: false, title: '', institutions: [] });
   
   const { institutions, loading: institutionsLoading, addInstitution, updateInstitution, deleteInstitution, addComment } = useInstitutions();
 
@@ -49,6 +64,15 @@ const filteredInstitutions = useMemo(() => {
   });
   }, [institutions, filters]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentInstitutions = filteredInstitutions.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredInstitutions.length / itemsPerPage);
+
   const kpiData = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -58,23 +82,24 @@ const filteredInstitutions = useMemo(() => {
       if (!i.fechaVencimiento) return false;
       const dueDate = new Date(i.fechaVencimiento + 'T00:00:00');
       return (i.estado === 'Validación de XML' || i.estado === 'Revalidación de XML') && dueDate < today;
-    }).length;
+    });
     
     return {
-      total: institutions.length + expired, // ✅ SUMA VENCIDAS TAMBIEN AL TOTAL
+      total: institutions.filter(i => i.estado !== 'Activo' && i.estado !== 'Suspendida'), // ✅ Sin Activas ni Suspendidas
       validacionMipymes: institutions.filter(i => 
         i.estado === 'Validación de XML' && i.categoria === 'MiPymes'
-      ).length,
+      ),
       validacionPremium: institutions.filter(i => 
         i.estado === 'Validación de XML' && i.categoria === 'Premium'
-      ).length,
+      ),
       validacionPremiumPortal: institutions.filter(i => 
         i.estado === 'Validación de XML' && i.categoria === 'Premium/Portal-MiPymes'
-      ).length,
-      revalidacion: institutions.filter(i => i.estado === 'Revalidación de XML').length,
-      activas: institutions.filter(i => i.estado === 'Activo').length,
-      suspended: institutions.filter(i => i.estado === 'Suspendida').length,
+      ),
+      revalidacion: institutions.filter(i => i.estado === 'Revalidación de XML'),
+      activas: institutions.filter(i => i.estado === 'Activo'),
+      suspended: institutions.filter(i => i.estado === 'Suspendida'),
       expired: expired, // Vencidas
+      sinRenovacion: institutions.filter(i => i.estado === 'Sin Renovación Contrato'),
     };
   }, [institutions]);
 
@@ -124,6 +149,14 @@ const filteredInstitutions = useMemo(() => {
     setIsInstitutionModalOpen(false);
     setIsFollowUpModalOpen(false);
     setSelectedInstitution(null);
+  };
+
+  const handleKpiClick = (title, instList) => {
+    setKpiModalData({ isOpen: true, title, institutions: instList });
+  };
+
+  const closeKpiModal = () => {
+    setKpiModalData({ ...kpiModalData, isOpen: false });
   };
 
   const handleSaveInstitution = async (institutionData) => {
@@ -189,25 +222,26 @@ const filteredInstitutions = useMemo(() => {
       <main className="container mx-auto p-6">
         {/* Dashboard KPIs */}
           <div className="flex flex-wrap justify-center gap-3 mb-8 px-2">
-            <KpiCard title="Total" value={kpiData.total} color="#1D4ED8" icon="🏢" />
-            <KpiCard title="Valid. XML MiPymes" value={kpiData.validacionMipymes} color="#16A34A" icon="📊" />
-            <KpiCard title="Valid. xml Premium" value={kpiData.validacionPremium} color="#059669" icon="⭐" />
-            <KpiCard title="Valid. Premium/Portal" value={kpiData.validacionPremiumPortal} color="#7C3AED" icon="🌐" /> {/* NUEVO KPI */}
-            <KpiCard title="Revalidación Inst. Activas" value={kpiData.revalidacion} color="#CA8A04" icon="🔄" />
-            <KpiCard title="Activas" value={kpiData.activas} color="#10B981" icon="✅" />
-            <KpiCard title="Suspendidas" value={kpiData.suspended} color="#F59E0B" icon="⏸️" />
-            <KpiCard title="Vencidas" value={kpiData.expired} color="#DC2626" icon="⚠️" />
+            <KpiCard title="Total" value={kpiData.total.length} color="#1D4ED8" icon="🏢" onClick={() => handleKpiClick('Total de Instituciones', kpiData.total)} />
+            <KpiCard title="Valid. XML MiPymes" value={kpiData.validacionMipymes.length} color="#16A34A" icon="📊" onClick={() => handleKpiClick('Valid. XML MiPymes', kpiData.validacionMipymes)} />
+            <KpiCard title="Valid. xml Premium" value={kpiData.validacionPremium.length} color="#059669" icon="⭐" onClick={() => handleKpiClick('Valid. XML Premium', kpiData.validacionPremium)} />
+            <KpiCard title="Valid. Premium/Portal" value={kpiData.validacionPremiumPortal.length} color="#7C3AED" icon="🌐" onClick={() => handleKpiClick('Valid. Premium/Portal-MiPymes', kpiData.validacionPremiumPortal)} /> {/* NUEVO KPI */}
+            <KpiCard title="Revalidación Inst. Activas" value={kpiData.revalidacion.length} color="#CA8A04" icon="🔄" onClick={() => handleKpiClick('Revalidación Inst. Activas', kpiData.revalidacion)} />
+            <KpiCard title="Activas" value={kpiData.activas.length} color="#10B981" icon="✅" onClick={() => handleKpiClick('Activas', kpiData.activas)} />
+            <KpiCard title="Suspendidas" value={kpiData.suspended.length} color="#F59E0B" icon="⏸️" onClick={() => handleKpiClick('Suspendidas', kpiData.suspended)} />
+            <KpiCard title="Vencidas" value={kpiData.expired.length} color="#DC2626" icon="⚠️" onClick={() => handleKpiClick('Vencidas', kpiData.expired)} />
+            <KpiCard title="Sin Renovación" value={kpiData.sinRenovacion.length} color="#6B7280" icon="🚫" onClick={() => handleKpiClick('Sin Renovación Contrato', kpiData.sinRenovacion)} />
           </div>
 
         {/* Panel de Alertas */}
         <AlertPanel institutions={institutions} />
 
-        <FilterControls filters={filters} setFilters={setFilters} />
+        <FilterControls filters={filters} setFilters={setFilters} totalCount={filteredInstitutions.length} />
 
         {/* Lista de Instituciones */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredInstitutions.length > 0 ? (
-            filteredInstitutions.map(inst => (
+          {currentInstitutions.length > 0 ? (
+            currentInstitutions.map(inst => (
               <InstitutionCard 
                 key={inst.id} 
                 institution={inst} 
@@ -217,19 +251,68 @@ const filteredInstitutions = useMemo(() => {
               />
             ))
           ) : (
-            <div className="col-span-full text-center py-10">
-              <p className="text-gray-500 text-xl mb-4">
-                No se encontraron instituciones con los filtros seleccionados.
+            <div className="col-span-full flex flex-col items-center justify-center py-16 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 border-dashed">
+              <EmptyStateIllustration />
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">No se encontraron instituciones</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-center max-w-md mb-8">
+                Prueba ajustando los filtros de búsqueda, o agrega una nueva institución para empezar a hacer seguimiento.
               </p>
               <button 
                 onClick={handleOpenAddModal}
-                className="bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-md flex items-center gap-2"
               >
-                Agregar Primera Institución
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                Agregar Institución
               </button>
             </div>
           )}
         </div>
+
+        {/* Controles de Paginación */}
+        {totalPages > 1 && (
+          <div className="flex justify-center mt-8">
+            <nav className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Anterior
+              </button>
+              
+              <div className="flex gap-1 hidden sm:flex">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-10 h-10 rounded-md flex items-center justify-center font-medium transition-colors ${
+                      currentPage === page
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+              
+              <div className="sm:hidden flex items-center px-4 text-gray-700 dark:text-gray-300 font-medium">
+                Página {currentPage} de {totalPages}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Siguiente
+              </button>
+            </nav>
+          </div>
+        )}
       </main>
 
       <InstitutionModal 
@@ -247,6 +330,13 @@ const filteredInstitutions = useMemo(() => {
           onAddComment={handleAddComment}
         />
       )}
+      
+      <KpiDetailModal 
+        isOpen={kpiModalData.isOpen}
+        onClose={closeKpiModal}
+        title={kpiModalData.title}
+        institutions={kpiModalData.institutions}
+      />
     </div>
   );
 }

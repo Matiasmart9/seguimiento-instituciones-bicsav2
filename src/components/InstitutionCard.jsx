@@ -2,6 +2,23 @@ import React, { useState } from 'react';
 import { getAlertStatus } from '../utils/dateUtils';
 import ConfirmationModal from './ConfirmationModal';
 
+const CalendarIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block mr-1 text-gray-400">
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+    <line x1="16" y1="2" x2="16" y2="6"></line>
+    <line x1="8" y1="2" x2="8" y2="6"></line>
+    <line x1="3" y1="10" x2="21" y2="10"></line>
+  </svg>
+);
+
+const AlertIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline-block mr-1">
+    <circle cx="12" cy="12" r="10"></circle>
+    <line x1="12" y1="8" x2="12" y2="12"></line>
+    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+  </svg>
+);
+
 const EditIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -36,6 +53,10 @@ const getStatusPillClass = (institution) => {
   if (institution.estado === 'Activo') {
     return 'bg-green-200 text-green-800';
   }
+
+  if (institution.estado === 'Sin Renovación Contrato') {
+    return 'bg-gray-200 text-gray-700 dark:bg-gray-600 dark:text-gray-200';
+  }
   
   if (institution.estado === 'Validación de XML' || institution.estado === 'Revalidación de XML') {
     const alertStatus = getAlertStatus(institution.fechaVencimiento);
@@ -60,6 +81,9 @@ const getDateInfo = (institution) => {
   if (institution.estado === 'Activo' && institution.fechaVencimiento) {
     return `En producción desde ${new Date(institution.fechaVencimiento + 'T00:00:00').toLocaleDateString()}`;
   }
+  if (institution.estado === 'Sin Renovación Contrato' && institution.fechaVencimiento) {
+    return `Contrato finalizado el ${new Date(institution.fechaVencimiento + 'T00:00:00').toLocaleDateString()}`;
+  }
   return null;
 };
 
@@ -81,42 +105,63 @@ const getDateInfo = (institution) => {
 
   return (
     <>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 flex flex-col justify-between hover:shadow-xl transition-shadow duration-300 h-full border border-gray-200 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col justify-between h-full border border-gray-100 dark:border-gray-700 relative overflow-hidden group">
+          {/* Acento superior de color según estado */}
+          <div className={`absolute top-0 left-0 w-full h-1 ${
+            statusPillClass.includes('red') ? 'bg-red-500' :
+            statusPillClass.includes('orange') ? 'bg-orange-500' :
+            statusPillClass.includes('yellow') ? 'bg-yellow-500' :
+            statusPillClass.includes('green') ? 'bg-green-500' :
+            'bg-gray-400'
+          }`}></div>
+          
           <div>
             <div className="flex justify-between items-start mb-2">
-              <h3 className="text-xl font-bold text-gray-800 dark:text-white">{institution.nombre}</h3>
-              {/* ... */}
+              <h3 className="text-xl font-bold text-gray-800 dark:text-white pr-2 leading-tight group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{institution.nombre}</h3>
+              <span className={`px-2.5 py-1 text-xs font-semibold rounded-full whitespace-nowrap shadow-sm border border-transparent ${statusPillClass}`}>
+                {institution.estado}
+              </span>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{institution.categoria}</p>
-            <div className="text-sm text-gray-600 dark:text-gray-300 space-y-2">
-            <p><strong>Fecha de Ingreso:</strong> {new Date(institution.fechaIngreso + 'T00:00:00').toLocaleDateString()}</p>
-            {institution.motivoSuspension && <p><strong>Motivo:</strong> {institution.motivoSuspension}</p>}
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-5 font-medium">{institution.categoria}</p>
+            <div className="text-sm text-gray-600 dark:text-gray-300 space-y-3 bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg border border-gray-100 dark:border-gray-600/50">
+            <p className="flex items-center">
+              <CalendarIcon /> 
+              <span>Ingreso: {new Date(institution.fechaIngreso + 'T00:00:00').toLocaleDateString()}</span>
+            </p>
+            {institution.motivoSuspension && (
+              <p className="flex items-start text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded">
+                <AlertIcon />
+                <span className="leading-tight">{institution.motivoSuspension}</span>
+              </p>
+            )}
             {dateInfo && (
-              <p>
-                <strong className={
-                  statusPillClass.includes('red') ? 'text-red-800' :
-                  statusPillClass.includes('orange') ? 'text-orange-800' :
-                  statusPillClass.includes('green') ? 'text-green-800' :
-                  'text-gray-800 dark:text-white'
-                }>
+              <p className="flex items-center">
+                <strong className={`flex items-center ${
+                  statusPillClass.includes('red') ? 'text-red-600 dark:text-red-400' :
+                  statusPillClass.includes('orange') ? 'text-orange-600 dark:text-orange-400' :
+                  statusPillClass.includes('green') ? 'text-green-600 dark:text-green-400' :
+                  'text-gray-800 dark:text-gray-200'
+                }`}>
+                  <CalendarIcon />
                   {dateInfo}
                 </strong>
               </p>
             )}
           </div>
         </div>
-        <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
+        <div className="flex justify-end gap-1 mt-5 pt-4 border-t border-gray-100 dark:border-gray-700">
           <button 
             onClick={() => onFollowUp(institution)} 
-            className="text-gray-600 hover:text-blue-600 flex items-center gap-2 p-2 rounded-md hover:bg-gray-100 transition-colors"
+            className="text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 flex items-center gap-1.5 px-3 py-2 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-all font-medium text-sm"
             title="Ver seguimiento"
           >
             <CommentIcon /> 
-            <span className="hidden sm:inline">Seguimiento</span> ({institution.comentarios?.length || 0})
+            <span className="hidden sm:inline">Seguimiento</span>
+            <span className="bg-gray-200 dark:bg-gray-600 text-xs px-1.5 rounded-full ml-1">{institution.comentarios?.length || 0}</span>
           </button>
           <button 
             onClick={() => onEdit(institution)} 
-            className="text-gray-600 hover:text-green-600 flex items-center gap-2 p-2 rounded-md hover:bg-gray-100 transition-colors"
+            className="text-gray-500 hover:text-green-600 dark:hover:text-green-400 flex items-center gap-1.5 px-3 py-2 rounded-md hover:bg-green-50 dark:hover:bg-green-900/30 transition-all font-medium text-sm"
             title="Editar institución"
           >
             <EditIcon /> 
@@ -124,7 +169,7 @@ const getDateInfo = (institution) => {
           </button>
           <button 
             onClick={handleDeleteClick}
-            className="text-gray-600 hover:text-red-600 flex items-center gap-2 p-2 rounded-md hover:bg-gray-100 transition-colors"
+            className="text-gray-500 hover:text-red-600 dark:hover:text-red-400 flex items-center gap-1.5 px-3 py-2 rounded-md hover:bg-red-50 dark:hover:bg-red-900/30 transition-all font-medium text-sm"
             title="Eliminar institución"
           >
             <DeleteIcon /> 
