@@ -1,6 +1,7 @@
-import React from 'react';
-import * as XLSX from 'xlsx';
+import { exportDetailToExcel } from '../utils/exportExcel';
+import { useToast } from '../context/ToastContext';
 import { getDaysUntil } from '../utils/dateUtils';
+import { countsDays } from '../utils/institutionUtils';
 
 const CloseIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -20,6 +21,7 @@ const ExcelIcon = () => (
 );
 
 const KpiDetailModal = ({ isOpen, onClose, title, institutions }) => {
+  const toast = useToast();
   if (!isOpen) return null;
 
   const renderStatusBadge = (estado) => {
@@ -36,62 +38,22 @@ const KpiDetailModal = ({ isOpen, onClose, title, institutions }) => {
     );
   };
 
-  const getDaysText = (dateStr) => {
-    if (!dateStr) return 'N/A';
-    const days = getDaysUntil(dateStr);
+  const getDaysText = (inst) => {
+    if (!countsDays(inst)) return 'N/A';
+    const days = getDaysUntil(inst.fechaVencimiento);
     if (days < 0) return <span className="text-red-600 dark:text-red-400 font-bold">{Math.abs(days)} días vencidos</span>;
     if (days === 0) return <span className="text-orange-600 dark:text-orange-400 font-bold">Vence hoy</span>;
     return <span>{days} días</span>;
   };
 
-  const exportToExcel = () => {
+  const exportToExcel = async () => {
     try {
-      const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
-        return new Date(dateString + 'T00:00:00').toLocaleDateString('es-PY');
-      };
-
-      const getDaysUntilText = (dateString) => {
-        if (!dateString) return 'N/A';
-        const days = getDaysUntil(dateString);
-        if (days < 0) return `${Math.abs(days)} días vencidos`;
-        return `${days} días`;
-      };
-
-      const prepareData = (inst) => ({
-        'Institución': inst.nombre,
-        'Categoría': inst.categoria,
-        'Estado': inst.estado,
-        'Fecha Vencimiento': formatDate(inst.fechaVencimiento),
-        'Días Restantes/Vencidos': getDaysUntilText(inst.fechaVencimiento)
-      });
-
-      const data = institutions.map(prepareData);
-      const ws = XLSX.utils.json_to_sheet(data);
-      const wb = XLSX.utils.book_new();
-      
-      // Ajustar ancho de columnas
-      const wscols = [
-        {wch: 40}, // Institución
-        {wch: 25}, // Categoría
-        {wch: 20}, // Estado
-        {wch: 20}, // Fecha Vencimiento
-        {wch: 25}  // Días
-      ];
-      ws['!cols'] = wscols;
-
-      XLSX.utils.book_append_sheet(wb, ws, 'Detalle');
-      
-      const safeTitle = title.replace(/[\/\\]/g, '-');
-      const fileName = `Detalle_${safeTitle}_${new Date().toLocaleDateString('es-PY').replace(/\//g, '-')}.xlsx`;
-      
-      XLSX.writeFile(wb, fileName);
+      await exportDetailToExcel(title, institutions);
     } catch (error) {
       console.error('Error exportando Excel:', error);
-      alert('Hubo un error al exportar el archivo Excel.');
+      toast.error('Hubo un error al exportar el archivo Excel.');
     }
   };
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center p-4" style={{ zIndex: 9999 }}>
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-4xl relative h-[85vh] flex flex-col animate-fadeIn" style={{ zIndex: 10000 }}>
@@ -127,7 +89,7 @@ const KpiDetailModal = ({ isOpen, onClose, title, institutions }) => {
                     <td className="px-6 py-4">{inst.categoria}</td>
                     <td className="px-6 py-4">{renderStatusBadge(inst.estado)}</td>
                     <td className="px-6 py-4">{inst.fechaVencimiento ? new Date(inst.fechaVencimiento + 'T00:00:00').toLocaleDateString() : 'N/A'}</td>
-                    <td className="px-6 py-4 text-center">{getDaysText(inst.fechaVencimiento)}</td>
+                    <td className="px-6 py-4 text-center">{getDaysText(inst)}</td>
                   </tr>
                 ))
               ) : (

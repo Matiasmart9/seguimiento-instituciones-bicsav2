@@ -1,17 +1,38 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useCallback, lazy, Suspense } from 'react';
 import { signOut } from 'firebase/auth';
 import { auth } from './firebase/firebaseConfig';
 import { useAuth } from './hooks/useAuth';
 import { useInstitutions } from './hooks/useInstitutions';
+import { useAccess } from './hooks/useAccess';
+import { useToast } from './context/ToastContext';
+import { DEFAULT_FILTERS, filterInstitutions, computeKpis } from './utils/institutionUtils';
 import Header from './components/Header';
 import KpiCard from './components/KpiCard';
 import FilterControls from './components/FilterControls';
 import InstitutionCard from './components/InstitutionCard';
-import InstitutionModal from './components/InstitutionModal';
-import FollowUpModal from './components/FollowUpModal';
+import Pagination from './components/Pagination';
 import AlertPanel from './components/AlertPanel';
-import Login from './components/Login';
-import KpiDetailModal from './components/KpiDetailModal';
+
+// Se cargan bajo demanda para aligerar el bundle inicial
+const Login = lazy(() => import('./components/Login'));
+const InstitutionModal = lazy(() => import('./components/InstitutionModal'));
+const FollowUpModal = lazy(() => import('./components/FollowUpModal'));
+const ReportView = lazy(() => import('./components/ReportView'));
+const UsersView = lazy(() => import('./components/UsersView'));
+const AuditModal = lazy(() => import('./components/AuditModal'));
+const KpiDetailModal = lazy(() => import('./components/KpiDetailModal'));
+
+const KPI_CARDS = [
+  { key: 'total', title: 'Total', modalTitle: 'Total de Instituciones', color: '#1D4ED8' },
+  { key: 'validacionMipymes', title: 'Valid. XML MiPymes', modalTitle: 'Valid. XML MiPymes', color: '#16A34A' },
+  { key: 'validacionPremium', title: 'Valid. xml Premium', modalTitle: 'Valid. XML Premium', color: '#059669' },
+  { key: 'validacionPremiumPortal', title: 'Valid. Premium/Portal', modalTitle: 'Valid. Premium/Portal-MiPymes', color: '#7C3AED' },
+  { key: 'revalidacion', title: 'Revalidación Inst. Activas', modalTitle: 'Revalidación Inst. Activas', color: '#CA8A04' },
+  { key: 'activas', title: 'Activas', modalTitle: 'Activas', color: '#10B981' },
+  { key: 'suspended', title: 'Suspendidas', modalTitle: 'Suspendidas', color: '#F59E0B' },
+  { key: 'expired', title: 'Vencidas', modalTitle: 'Vencidas', color: '#DC2626' },
+  { key: 'sinRenovacion', title: 'Sin Renovación', modalTitle: 'Sin Renovación Contrato', color: '#6B7280' },
+];
 
 const EmptyStateIllustration = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mx-auto text-gray-300 dark:text-gray-600 mb-6">
@@ -24,98 +45,79 @@ const EmptyStateIllustration = () => (
   </svg>
 );
 
+const Spinner = ({ text }) => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+      <p className="mt-4 text-gray-600">{text}</p>
+    </div>
+  </div>
+);
+
+// Cuenta sin acceso: pendiente de aprobación o inhabilitada por un administrador
+const AccessBlocked = ({ email, pending, onLogout }) => (
+  <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 max-w-md text-center">
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+        {pending ? 'Cuenta pendiente de aprobación' : 'Cuenta inhabilitada'}
+      </h1>
+      <p className="text-gray-600 dark:text-gray-300 mb-1">{email}</p>
+      <p className="text-gray-600 dark:text-gray-300 mb-6">
+        {pending
+          ? 'Un administrador debe habilitar tu acceso. Cuando lo haga, esta pantalla se actualizará sola.'
+          : 'Un administrador inhabilitó tu acceso al sistema. Comunícate con él si crees que es un error.'}
+      </p>
+      <button onClick={onLogout} className="bg-gray-700 hover:bg-gray-800 text-white font-semibold py-2 px-5 rounded-lg transition-colors">
+        Cerrar sesión
+      </button>
+    </div>
+  </div>
+);
+
 function App() {
+  const toast = useToast();
   const { user, loading: authLoading } = useAuth();
-  const [filters, setFilters] = useState({ estado: 'Todos', categoria: 'Todos', search: '' });
+  const { access, loading: accessLoading } = useAccess(user);
+  const [view, setView] = useState('panel');
+  const [filters, setFiltersState] = useState(DEFAULT_FILTERS);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12;
+  const [itemsPerPage, setItemsPerPageState] = useState(12);
+
+  // Cambiar filtros o tamaño de página vuelve a la primera página
+  const setFilters = useCallback((update) => {
+    setFiltersState(update);
+    setCurrentPage(1);
+  }, []);
+  const setItemsPerPage = (size) => {
+    setItemsPerPageState(size);
+    setCurrentPage(1);
+  };
   const [isInstitutionModalOpen, setIsInstitutionModalOpen] = useState(false);
   const [isFollowUpModalOpen, setIsFollowUpModalOpen] = useState(false);
+  const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
   const [selectedInstitution, setSelectedInstitution] = useState(null);
   const [kpiModalData, setKpiModalData] = useState({ isOpen: false, title: '', institutions: [] });
-  
-  const { institutions, loading: institutionsLoading, addInstitution, updateInstitution, deleteInstitution, addComment } = useInstitutions();
 
-const filteredInstitutions = useMemo(() => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  return institutions.filter(inst => {
-    // ✅ LÓGICA ESPECIAL PARA VENCIDAS
-    if (filters.estado === 'Vencidas') {
-      if (!inst.fechaVencimiento) return false;
-      const dueDate = new Date(inst.fechaVencimiento + 'T00:00:00');
-      const isExpired = (inst.estado === 'Validación de XML' || inst.estado === 'Revalidación de XML') && dueDate < today;
-      
-      const categoriaMatch = filters.categoria === 'Todos' || inst.categoria === filters.categoria;
-      const searchMatch = !filters.search || 
-        inst.nombre.toLowerCase().includes(filters.search.toLowerCase());
-      
-      return isExpired && categoriaMatch && searchMatch;
-    }
-    
-    // ✅ LÓGICA NORMAL PARA OTROS ESTADOS
-    const estadoMatch = filters.estado === 'Todos' || inst.estado === filters.estado;
-    const categoriaMatch = filters.categoria === 'Todos' || inst.categoria === filters.categoria;
-    const searchMatch = !filters.search || 
-      inst.nombre.toLowerCase().includes(filters.search.toLowerCase());
-    
-    return estadoMatch && categoriaMatch && searchMatch;
-  });
-  }, [institutions, filters]);
+  const { institutions, loading: institutionsLoading, addInstitution, updateInstitution, deleteInstitution, addComment, deleteComment } = useInstitutions(access.active);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filters]);
+  const filteredInstitutions = useMemo(() => filterInstitutions(institutions, filters), [institutions, filters]);
+  const kpiData = useMemo(() => computeKpis(institutions), [institutions]);
 
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentInstitutions = filteredInstitutions.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredInstitutions.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredInstitutions.length / itemsPerPage));
+  const safePage = Math.min(currentPage, totalPages);
+  const currentInstitutions = filteredInstitutions.slice((safePage - 1) * itemsPerPage, safePage * itemsPerPage);
 
-  const kpiData = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Calcular vencidas primero
-    const expired = institutions.filter(i => {
-      if (!i.fechaVencimiento) return false;
-      const dueDate = new Date(i.fechaVencimiento + 'T00:00:00');
-      return (i.estado === 'Validación de XML' || i.estado === 'Revalidación de XML') && dueDate < today;
-    });
-    
-    return {
-      total: institutions.filter(i => i.estado !== 'Activo' && i.estado !== 'Suspendida'), // ✅ Sin Activas ni Suspendidas
-      validacionMipymes: institutions.filter(i => 
-        i.estado === 'Validación de XML' && i.categoria === 'MiPymes'
-      ),
-      validacionPremium: institutions.filter(i => 
-        i.estado === 'Validación de XML' && i.categoria === 'Premium'
-      ),
-      validacionPremiumPortal: institutions.filter(i => 
-        i.estado === 'Validación de XML' && i.categoria === 'Premium/Portal-MiPymes'
-      ),
-      revalidacion: institutions.filter(i => i.estado === 'Revalidación de XML'),
-      activas: institutions.filter(i => i.estado === 'Activo'),
-      suspended: institutions.filter(i => i.estado === 'Suspendida'),
-      expired: expired, // Vencidas
-      sinRenovacion: institutions.filter(i => i.estado === 'Sin Renovación Contrato'),
-    };
-  }, [institutions]);
-
-  const handleLoginSuccess = () => {
-    console.log('✅ Login exitoso - callback ejecutado');
-    // El hook useAuth ya maneja la actualización automáticamente
+  const handlePageChange = (page) => {
+    setCurrentPage(Math.min(Math.max(page, 1), totalPages));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleLogout = async () => {
     try {
-      console.log('🚪 Cerrando sesión...');
       await signOut(auth);
-      // El hook useAuth actualizará automáticamente el estado
     } catch (error) {
-      console.error('❌ Error al cerrar sesión:', error);
-      alert('Error al cerrar sesión. Por favor, intenta nuevamente.');
+      console.error('Error al cerrar sesión:', error);
+      toast.error('Error al cerrar sesión. Por favor, intenta nuevamente.');
     }
   };
 
@@ -131,13 +133,17 @@ const filteredInstitutions = useMemo(() => {
 
   const handleDeleteInstitution = async (institutionId) => {
     try {
-      console.log('🗑️ Eliminando institución:', institutionId);
       await deleteInstitution(institutionId);
-      console.log('✅ Institución eliminada exitosamente');
+      toast.success('Institución eliminada');
     } catch (error) {
-      console.error('❌ Error eliminando institución:', error);
-      alert('Error al eliminar la institución. Por favor, intenta nuevamente.');
+      console.error('Error eliminando institución:', error);
+      toast.error('Error al eliminar la institución. Por favor, intenta nuevamente.');
     }
+  };
+
+  const handleOpenAuditModal = (institution) => {
+    setSelectedInstitution(institution);
+    setIsAuditModalOpen(true);
   };
 
   const handleOpenFollowUpModal = (institution) => {
@@ -148,6 +154,7 @@ const filteredInstitutions = useMemo(() => {
   const handleCloseModals = () => {
     setIsInstitutionModalOpen(false);
     setIsFollowUpModalOpen(false);
+    setIsAuditModalOpen(false);
     setSelectedInstitution(null);
   };
 
@@ -156,7 +163,7 @@ const filteredInstitutions = useMemo(() => {
   };
 
   const closeKpiModal = () => {
-    setKpiModalData({ ...kpiModalData, isOpen: false });
+    setKpiModalData((prev) => ({ ...prev, isOpen: false }));
   };
 
   const handleSaveInstitution = async (institutionData) => {
@@ -167,87 +174,104 @@ const filteredInstitutions = useMemo(() => {
         await addInstitution(institutionData);
       }
       handleCloseModals();
+      toast.success('Institución guardada');
     } catch (error) {
       console.error('Error al guardar institución:', error);
-      alert('Error al guardar la institución. Por favor, intenta nuevamente.');
+      toast.error('Error al guardar la institución. Por favor, intenta nuevamente.');
     }
   };
 
-  const handleAddComment = async (institutionId, commentText) => {
-    try {
-      console.log('🔄 App: Agregando comentario a institución:', institutionId);
-      await addComment(institutionId, commentText);
-      console.log('✅ App: Comentario agregado exitosamente');
-    } catch (error) {
-      console.error('❌ App: Error al agregar comentario:', error);
-      alert('Error al agregar comentario. Por favor, intenta nuevamente.');
-    }
-  };
+  // Los errores se propagan a FollowUpModal, que los muestra y conserva el texto escrito
+  const handleAddComment = (institutionId, commentText) => addComment(institutionId, commentText);
+  const handleDeleteComment = (institutionId, comment) => deleteComment(institutionId, comment);
 
-  // Debug: mostrar estado actual
-  console.log('🎯 Estado actual - authLoading:', authLoading, 'user:', user ? user.email : 'No user', 'institutionsLoading:', institutionsLoading);
+  // Versión en vivo de la institución abierta: el modal refleja comentarios nuevos o eliminados
+  const liveSelectedInstitution = selectedInstitution
+    ? institutions.find((i) => i.id === selectedInstitution.id) ?? selectedInstitution
+    : null;
 
-  // Mostrar loading mientras verifica la autenticación
-  if (authLoading) {
+  if (authLoading) return <Spinner text="Verificando autenticación..." />;
+
+  if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Verificando autenticación...</p>
-        </div>
-      </div>
+      <Suspense fallback={<Spinner text="Cargando..." />}>
+        <Login />
+      </Suspense>
     );
   }
 
-  // Mostrar login si no hay usuario
-  if (!user) {
-    return <Login onLogin={handleLoginSuccess} />;
+  if (accessLoading) return <Spinner text="Verificando permisos..." />;
+
+  if (!access.active) {
+    return <AccessBlocked email={user.email} pending={access.pending} onLogout={handleLogout} />;
   }
 
-  // Mostrar loading mientras cargan las instituciones
-  if (institutionsLoading) {
+  if (institutionsLoading) return <Spinner text="Cargando instituciones..." />;
+
+  // Vista efectiva: sin acceso al panel XML, el Reporte es la vista por defecto
+  let currentView = view;
+  if (currentView === 'users' && !access.isAdmin) currentView = 'report';
+  if (currentView === 'panel' && !access.can.xml) currentView = 'report';
+
+  if (currentView === 'users') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Cargando instituciones...</p>
-        </div>
-      </div>
+      <Suspense fallback={<Spinner text="Cargando usuarios..." />}>
+        <UsersView currentUser={user} onBack={() => setView('panel')} />
+      </Suspense>
+    );
+  }
+
+  if (currentView === 'report') {
+    return (
+      <Suspense fallback={<Spinner text="Cargando reporte..." />}>
+        <ReportView
+          institutions={institutions}
+          onBack={access.can.xml ? () => setView('panel') : undefined}
+          onLogout={access.can.xml ? undefined : handleLogout}
+          userEmail={user.email}
+        />
+      </Suspense>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
-      <Header onAddInstitution={handleOpenAddModal} onLogout={handleLogout} institutions={institutions} />
+      <Header
+        onAddInstitution={handleOpenAddModal}
+        onLogout={handleLogout}
+        onOpenReport={() => setView('report')}
+        onOpenUsers={access.isAdmin ? () => setView('users') : undefined}
+        canAdd={access.can.editar}
+        institutions={institutions}
+      />
       <main className="container mx-auto p-6">
-        {/* Dashboard KPIs */}
-          <div className="flex flex-wrap justify-center gap-3 mb-8 px-2">
-            <KpiCard title="Total" value={kpiData.total.length} color="#1D4ED8" icon="🏢" onClick={() => handleKpiClick('Total de Instituciones', kpiData.total)} />
-            <KpiCard title="Valid. XML MiPymes" value={kpiData.validacionMipymes.length} color="#16A34A" icon="📊" onClick={() => handleKpiClick('Valid. XML MiPymes', kpiData.validacionMipymes)} />
-            <KpiCard title="Valid. xml Premium" value={kpiData.validacionPremium.length} color="#059669" icon="⭐" onClick={() => handleKpiClick('Valid. XML Premium', kpiData.validacionPremium)} />
-            <KpiCard title="Valid. Premium/Portal" value={kpiData.validacionPremiumPortal.length} color="#7C3AED" icon="🌐" onClick={() => handleKpiClick('Valid. Premium/Portal-MiPymes', kpiData.validacionPremiumPortal)} /> {/* NUEVO KPI */}
-            <KpiCard title="Revalidación Inst. Activas" value={kpiData.revalidacion.length} color="#CA8A04" icon="🔄" onClick={() => handleKpiClick('Revalidación Inst. Activas', kpiData.revalidacion)} />
-            <KpiCard title="Activas" value={kpiData.activas.length} color="#10B981" icon="✅" onClick={() => handleKpiClick('Activas', kpiData.activas)} />
-            <KpiCard title="Suspendidas" value={kpiData.suspended.length} color="#F59E0B" icon="⏸️" onClick={() => handleKpiClick('Suspendidas', kpiData.suspended)} />
-            <KpiCard title="Vencidas" value={kpiData.expired.length} color="#DC2626" icon="⚠️" onClick={() => handleKpiClick('Vencidas', kpiData.expired)} />
-            <KpiCard title="Sin Renovación" value={kpiData.sinRenovacion.length} color="#6B7280" icon="🚫" onClick={() => handleKpiClick('Sin Renovación Contrato', kpiData.sinRenovacion)} />
-          </div>
+        <div className="flex flex-wrap justify-center gap-3 mb-8 px-2">
+          {KPI_CARDS.map(({ key, title, modalTitle, color }) => (
+            <KpiCard
+              key={key}
+              title={title}
+              value={kpiData[key].length}
+              color={color}
+              onClick={() => handleKpiClick(modalTitle, kpiData[key])}
+            />
+          ))}
+        </div>
 
-        {/* Panel de Alertas */}
         <AlertPanel institutions={institutions} />
 
         <FilterControls filters={filters} setFilters={setFilters} totalCount={filteredInstitutions.length} />
 
-        {/* Lista de Instituciones */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {currentInstitutions.length > 0 ? (
-            currentInstitutions.map(inst => (
-              <InstitutionCard 
-                key={inst.id} 
-                institution={inst} 
+            currentInstitutions.map((inst) => (
+              <InstitutionCard
+                key={inst.id}
+                institution={inst}
                 onEdit={handleOpenEditModal}
                 onFollowUp={handleOpenFollowUpModal}
+                onAudit={handleOpenAuditModal}
                 onDelete={handleDeleteInstitution}
+                can={access.can}
               />
             ))
           ) : (
@@ -255,9 +279,9 @@ const filteredInstitutions = useMemo(() => {
               <EmptyStateIllustration />
               <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">No se encontraron instituciones</h3>
               <p className="text-gray-500 dark:text-gray-400 text-center max-w-md mb-8">
-                Prueba ajustando los filtros de búsqueda, o agrega una nueva institución para empezar a hacer seguimiento.
+                Prueba ajustando los filtros de búsqueda{access.can.editar ? ', o agrega una nueva institución para empezar a hacer seguimiento' : ''}.
               </p>
-              <button 
+              {access.can.editar && <button
                 onClick={handleOpenAddModal}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition-all transform hover:scale-105 shadow-md flex items-center gap-2"
               >
@@ -266,77 +290,55 @@ const filteredInstitutions = useMemo(() => {
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
                 Agregar Institución
-              </button>
+              </button>}
             </div>
           )}
         </div>
 
-        {/* Controles de Paginación */}
-        {totalPages > 1 && (
-          <div className="flex justify-center mt-8">
-            <nav className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Anterior
-              </button>
-              
-              <div className="flex gap-1 hidden sm:flex">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`w-10 h-10 rounded-md flex items-center justify-center font-medium transition-colors ${
-                      currentPage === page
-                        ? 'bg-blue-600 text-white border-blue-600'
-                        : 'border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ))}
-              </div>
-              
-              <div className="sm:hidden flex items-center px-4 text-gray-700 dark:text-gray-300 font-medium">
-                Página {currentPage} de {totalPages}
-              </div>
-
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Siguiente
-              </button>
-            </nav>
-          </div>
-        )}
+        <Pagination
+          currentPage={safePage}
+          totalPages={totalPages}
+          totalItems={filteredInstitutions.length}
+          pageSize={itemsPerPage}
+          onPageChange={handlePageChange}
+          onPageSizeChange={setItemsPerPage}
+        />
       </main>
 
-      <InstitutionModal 
-        isOpen={isInstitutionModalOpen}
-        onClose={handleCloseModals}
-        onSave={handleSaveInstitution}
-        institution={selectedInstitution}
-      />
-      
-      {selectedInstitution && (
-        <FollowUpModal 
-          isOpen={isFollowUpModalOpen}
-          onClose={handleCloseModals}
-          institution={selectedInstitution}
-          onAddComment={handleAddComment}
-        />
-      )}
-      
-      <KpiDetailModal 
-        isOpen={kpiModalData.isOpen}
-        onClose={closeKpiModal}
-        title={kpiModalData.title}
-        institutions={kpiModalData.institutions}
-      />
+      <Suspense fallback={null}>
+        {isInstitutionModalOpen && (
+          <InstitutionModal
+            key={selectedInstitution?.id ?? 'new'}
+            isOpen={isInstitutionModalOpen}
+            onClose={handleCloseModals}
+            onSave={handleSaveInstitution}
+            institution={selectedInstitution}
+          />
+        )}
+
+        {liveSelectedInstitution && isAuditModalOpen && (
+          <AuditModal isOpen={isAuditModalOpen} onClose={handleCloseModals} institution={liveSelectedInstitution} />
+        )}
+
+        {selectedInstitution && isFollowUpModalOpen && (
+          <FollowUpModal
+            isOpen={isFollowUpModalOpen}
+            onClose={handleCloseModals}
+            institution={liveSelectedInstitution}
+            onAddComment={handleAddComment}
+            onDeleteComment={handleDeleteComment}
+          />
+        )}
+
+        {kpiModalData.isOpen && (
+          <KpiDetailModal
+            isOpen={kpiModalData.isOpen}
+            onClose={closeKpiModal}
+            title={kpiModalData.title}
+            institutions={kpiModalData.institutions}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }

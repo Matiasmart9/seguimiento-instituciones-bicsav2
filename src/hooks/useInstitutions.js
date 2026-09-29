@@ -1,23 +1,17 @@
 import { useState, useEffect } from 'react';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 import { useAuth } from './useAuth';
+import { buildEntry, diffInstitution, commentPreview } from '../utils/audit';
 
-export function useInstitutions() {
+// `enabled` evita consultar Firestore hasta saber que el usuario tiene acceso (perfil activo)
+export function useInstitutions(enabled = true) {
   const [institutions, setInstitutions] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!user) {
-      setInstitutions([]);
-      setLoading(false);
-      return;
-    }
-
-    console.log('🔍 Suscribiéndose a TODAS las instituciones para usuario:', user.email);
-    
-    // QUITAR el filtro by userId - mostrar todas las instituciones
+    if (!user || !enabled) return;
     const q = query(
       collection(db, 'institutions'),
       orderBy('fechaIngreso', 'desc')
@@ -29,53 +23,59 @@ export function useInstitutions() {
           id: doc.id,
           ...doc.data()
         }));
-        console.log('📊 Todas las instituciones cargadas:', institutionsData.length);
         setInstitutions(institutionsData);
         setLoading(false);
       },
       (error) => {
-        console.error('❌ Error cargando instituciones:', error);
+        console.error('Error cargando instituciones:', error);
         setLoading(false);
       }
     );
 
-    return unsubscribe;
-  }, [user]);
+    return () => {
+      unsubscribe();
+      setInstitutions([]);
+      setLoading(true);
+    };
+  }, [user, enabled]);
 
   const addInstitution = async (institutionData) => {
     if (!user) throw new Error('Usuario no autenticado');
 
     const institutionWithUser = {
       ...institutionData,
-      // Mantener información del usuario que creó, pero no filtrar
+      // Se guarda quién creó el registro (todas las instituciones son visibles para todos)
       creadoPor: user.email,
       userId: user.uid,
-      fechaCreacion: new Date().toISOString()
+      fechaCreacion: new Date().toISOString(),
+      historial: [buildEntry(user, 'institucion_creada', `Registro creado en estado "${institutionData.estado}"`)]
     };
-
-    console.log('➕ Agregando institución por usuario:', user.email);
     const docRef = await addDoc(collection(db, 'institutions'), institutionWithUser);
     return docRef.id;
   };
 
   const updateInstitution = async (id, institutionData) => {
     if (!user) throw new Error('Usuario no autenticado');
+    // El formulario trae una copia de comentarios e historial: no se reenvían para no pisar
+    // lo que otros usuarios hayan agregado mientras tanto.
+    const { id: _id, comentarios: _comentarios, historial: _historial, ...fields } = institutionData;
 
-    console.log('✏️ Actualizando institución:', id, 'por usuario:', user.email);
-    await updateDoc(doc(db, 'institutions', id), institutionData);
+    const previous = institutions.find((inst) => inst.id === id);
+    const entries = previous ? diffInstitution(user, previous, fields) : [];
+
+    await updateDoc(doc(db, 'institutions', id), {
+      ...fields,
+      ...(entries.length > 0 && { historial: arrayUnion(...entries) })
+    });
   };
 
   const deleteInstitution = async (id) => {
     if (!user) throw new Error('Usuario no autenticado');
-
-    console.log('🗑️ Eliminando institución en Firestore:', id, 'por usuario:', user.email);
     await deleteDoc(doc(db, 'institutions', id));
   };
 
   const addComment = async (institutionId, commentText) => {
     if (!user) throw new Error('Usuario no autenticado');
-
-    console.log('💬 Agregando comentario como:', user.email);
     
     const comment = {
       texto: commentText,
@@ -84,24 +84,34 @@ export function useInstitutions() {
       userId: user.uid
     };
 
-    const institution = institutions.find(inst => inst.id === institutionId);
-    if (!institution) throw new Error('Institución no encontrada');
-
-    const updatedComments = institution.comentarios 
-      ? [...institution.comentarios, comment]
-      : [comment];
-
+    // arrayUnion evita pisar comentarios si dos usuarios comentan a la vez
     await updateDoc(doc(db, 'institutions', institutionId), {
-      comentarios: updatedComments
+      comentarios: arrayUnion(comment),
+      historial: arrayUnion(buildEntry(user, 'comentario_agregado', commentPreview(comment)))
     });
   };
 
+  // arrayRemove exige el objeto idéntico al guardado; se recibe tal cual viene del snapshot
+  const deleteComment = async (institutionId, comment) => {
+    if (!user) throw new Error('Usuario no autenticado');
+
+    await updateDoc(doc(db, 'institutions', institutionId), {
+      comentarios: arrayRemove(comment),
+      historial: arrayUnion(
+        buildEntry(user, 'comentario_eliminado', `"${commentPreview(comment)}" (escrito por ${comment.autor})`)
+      )
+    });
+  };
+
+  const isActive = Boolean(user) && enabled;
+
   return {
-    institutions,
-    loading,
+    institutions: isActive ? institutions : [],
+    loading: isActive ? loading : false,
     addInstitution,
     updateInstitution,
     deleteInstitution,
-    addComment
+    addComment,
+    deleteComment
   };
 }

@@ -1,4 +1,6 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
+import { SORT_OPTIONS, DEFAULT_FILTERS } from '../utils/institutionUtils';
+import { useDebounce } from '../hooks/useDebounce';
 import styled from 'styled-components';
 
 const FilterIcon = () => (
@@ -153,11 +155,23 @@ const darkTheme = {
 };
 
 const FilterControls = ({ filters, setFilters, totalCount }) => {
+  // El texto se escribe en un estado local y se aplica al filtro tras una pausa (evita filtrar en cada tecla)
+  const [searchText, setSearchText] = useState(filters.search);
+  const debouncedSearch = useDebounce(searchText, 250);
+
+  useEffect(() => {
+    setFilters((prev) => (prev.search === debouncedSearch ? prev : { ...prev, search: debouncedSearch }));
+  }, [debouncedSearch, setFilters]);
+
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
+    setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleClear = () => {
+    setSearchText('');
+    setFilters(DEFAULT_FILTERS);
+  };
   // Detectar si está en modo oscuro
   const isDarkMode = document.documentElement.classList.contains('dark');
 
@@ -183,8 +197,8 @@ const FilterControls = ({ filters, setFilters, totalCount }) => {
           <input 
             type="text" 
             name="search" 
-            value={filters.search || ''} 
-            onChange={handleFilterChange} 
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)} 
             placeholder="Buscar institución por nombre..." 
             className="search-input"
           />
@@ -227,6 +241,20 @@ const FilterControls = ({ filters, setFilters, totalCount }) => {
           <option value="Premium/Portal-MiPymes">Premium/Portal-MiPymes</option>
         </select>
         </div>
+        <div className="relative flex items-center bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 px-3 py-1">
+          <span className="mr-2 text-gray-500 dark:text-gray-400 text-sm">Orden:</span>
+          <select
+            name="sort"
+            value={filters.sort}
+            onChange={handleFilterChange}
+            className="p-1.5 bg-transparent border-none focus:outline-none text-gray-900 dark:text-white cursor-pointer w-full"
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+
 
         {totalCount !== undefined && (
           <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-lg border border-blue-200 dark:border-blue-800 font-semibold text-sm shadow-sm ml-auto">
@@ -236,7 +264,7 @@ const FilterControls = ({ filters, setFilters, totalCount }) => {
         )}
 
         <button 
-          onClick={() => setFilters({ estado: 'Todos', categoria: 'Todos', search: '' })} 
+          onClick={handleClear} 
           className="flex items-center text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:border-red-300 dark:hover:border-red-800 px-3 py-2.5 rounded-lg transition-all text-sm font-medium"
         >
           <ClearIcon />

@@ -1,4 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { APP_VERSION } from '../version';
+import { MailIcon, ShieldIcon, EyeIcon, EyeOffIcon } from './Icons';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase/firebaseConfig';
 import { Renderer, Program, Mesh, Triangle, Vec2 } from 'ogl';
@@ -159,17 +161,18 @@ void main(){
       cancelAnimationFrame(frame);
       window.removeEventListener('resize', resize);
     };
-  }, [hueShift, noiseIntensity, scanlineIntensity, speed, scanlineFrequency, warpAmount, resolutionScale]);
+  }, [hueShift, noiseIntensity, scanlineIntensity, speed, scanlineFrequency, warpAmount, resolutionScale, vertex, fragment]);
 
   return <canvas ref={ref} style={{ width: '100%', height: '100%', display: 'block' }} />;
 };
 
 // Componente Login
-const Login = ({ onLogin }) => {
+const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -177,12 +180,9 @@ const Login = ({ onLogin }) => {
     setError('');
 
     try {
-      console.log('🔐 Intentando login con:', email);
       await signInWithEmailAndPassword(auth, email, password);
-      console.log('✅ Login exitoso - useAuth manejará el estado');
-      onLogin();
     } catch (err) {
-      console.error('❌ Error de login:', err);
+      console.error('Error de login:', err.code);
       let errorMessage = 'Error de autenticación. Verifica tus credenciales.';
       
       if (err.code === 'auth/invalid-email') {
@@ -228,8 +228,8 @@ const Login = ({ onLogin }) => {
         </h2>
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">
-              📧 Correo  
+            <label className="flex items-center gap-1.5 text-sm font-bold text-gray-700 mb-1">
+              <MailIcon size={16} className="text-orange-500" /> Correo
             </label>
             <input
               type="email"
@@ -240,16 +240,27 @@ const Login = ({ onLogin }) => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              🛡️ Contraseña
+            <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1">
+              <ShieldIcon size={16} className="text-orange-500" /> Contraseña
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-orange-600 focus:outline-none"
+              >
+                {showPassword ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
+              </button>
+            </div>
           </div>
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-md p-3">
@@ -271,7 +282,7 @@ const Login = ({ onLogin }) => {
             )}           
           </button>
           <label className="block text-sm font-medium text-gray-600 mb-1 text-center">
-            V1.0
+            {APP_VERSION}
           </label>          
         </form>
       </div>

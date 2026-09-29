@@ -70,7 +70,7 @@ const getCardColors = (title) => {
   };
 };
 
-const KpiCard = ({ title, value, subtitle, icon, onClick }) => {
+const KpiCard = ({ title, value, subtitle, onClick }) => {
   const colors = getCardColors(title);
 
   return (

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import { CheckCircleIcon, DotIcon } from './Icons';
 import { getAlertStatus, getDaysUntil } from '../utils/dateUtils';
 
 const AlertPanel = ({ institutions }) => {
@@ -6,7 +7,7 @@ const AlertPanel = ({ institutions }) => {
   
   // CORREGIDO: Mostrar instituciones vencidas y por vencer (hasta 8 días)
   const criticalInstitutions = institutions.filter(inst => {
-    if (inst.estado === 'Activo' || inst.estado === 'Suspendida') return false;
+    if (inst.estado === 'Activo' || inst.estado === 'Suspendida' || inst.estado === 'Sin Renovación Contrato') return false;
     if (!inst.fechaVencimiento) return false;
     
     const daysUntil = getDaysUntil(inst.fechaVencimiento);
@@ -26,7 +27,7 @@ const AlertPanel = ({ institutions }) => {
     return (
       <div className="bg-green-50 dark:bg-green-900 rounded-lg shadow-md p-6 mb-6 border-l-4 border-green-500">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">✅</span>
+          <CheckCircleIcon size={28} className="text-green-600 dark:text-green-300" />
           <h2 className="text-xl font-bold text-green-700 dark:text-green-300">Estado de Validaciones</h2>
         </div>
         <p className="text-green-600 dark:text-green-400 mt-2">No hay validaciones críticas en este momento.</p>
@@ -45,10 +46,10 @@ const AlertPanel = ({ institutions }) => {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'expired': return '🔴';
-      case 'critical': return '🟠';
-      case 'warning': return '🟡';
-      default: return '⚪';
+      case 'expired': return <DotIcon className="text-red-500" />;
+      case 'critical': return <DotIcon className="text-orange-500" />;
+      case 'warning': return <DotIcon className="text-yellow-500" />;
+      default: return <DotIcon className="text-gray-400" />;
     }
   };
 
@@ -67,7 +68,7 @@ const AlertPanel = ({ institutions }) => {
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 border-l-4 border-red-500">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <span className="text-2xl">🔴</span>
+          <DotIcon size={20} className="text-red-500" />
           <h2 className="text-xl font-bold text-red-700 dark:text-red-400">ALERTA: Validaciones Críticas</h2>
         </div>
         <span className="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 px-3 py-1 rounded-full text-sm font-semibold">
@@ -159,13 +160,13 @@ const AlertPanel = ({ institutions }) => {
       <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
         <div className="flex flex-wrap gap-4 text-sm justify-center">
           <span className="flex items-center gap-2 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 px-3 py-1 rounded-full">
-            <span>🔴</span> Vencidas: {expiredCount}
+            <DotIcon size={10} className="text-red-500" /> Vencidas: {expiredCount}
           </span>
           <span className="flex items-center gap-2 bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 px-3 py-1 rounded-full">
-            <span>🟠</span> Críticas (≤5 días): {criticalCount} {/* CAMBIADO de 2 a 5 */}
+            <DotIcon size={10} className="text-orange-500" /> Críticas (≤5 días): {criticalCount} {/* CAMBIADO de 2 a 5 */}
           </span>
           <span className="flex items-center gap-2 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-3 py-1 rounded-full">
-            <span>🟡</span> Advertencia (6-8 días): {warningCount} {/* CAMBIADO de 3-5 a 6-8 */}
+            <DotIcon size={10} className="text-yellow-500" /> Advertencia (6-8 días): {warningCount} {/* CAMBIADO de 3-5 a 6-8 */}
           </span>
         </div>
       </div>

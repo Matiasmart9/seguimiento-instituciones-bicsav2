@@ -19,7 +19,5 @@ const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Para debugging
-console.log('Firebase configurado. Project ID:', firebaseConfig.projectId);
 
-export { app, analytics, auth, db };
+export { app, analytics, auth, db, firebaseConfig };

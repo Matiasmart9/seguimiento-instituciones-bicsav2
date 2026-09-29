@@ -1,0 +1,79 @@
+rules_version = '2';
+
+// Reglas de seguridad de Firestore para Seguimiento de Instituciones BICSA.
+//
+// IMPORTANTE: estas reglas NO se aplican solas. Hay que publicarlas:
+//   - Consola de Firebase > Firestore Database > Reglas > pegar este contenido > Publicar, o
+//   - firebase deploy --only firestore:rules
+//
+// Modelo:
+//   - Super administrador: se identifica por su correo (debe coincidir con SUPER_ADMIN_EMAIL en src/utils/permissions.js).
+//   - users/{uid}: perfil con rol ('admin' | 'usuario'), activo y permisos { xml, seguimiento, editar, auditoria, eliminar }.
+//   - Cualquier cuenta nueva se crea como perfil inactivo/pendiente; solo un administrador la habilita.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSuper() {
+      return signedIn() && request.auth.token.email == 'matiasmart7@gmail.com';
+    }
+
+    function hasProfile() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function myProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isSuper() || (hasProfile() && myProfile().activo == true && myProfile().rol == 'admin');
+    }
+
+    // Cuenta habilitada (puede leer el reporte)
+    function isActive() {
+      return isSuper() || (hasProfile() && myProfile().activo == true);
+    }
+
+    // Permiso puntual: los administradores lo tienen todo; el resto necesita el panel XML + ese permiso
+    function can(perm) {
+      return isAdmin() || (isActive() && myProfile().permisos.xml == true && myProfile().permisos[perm] == true);
+    }
+
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+
+      // Un administrador crea cualquier perfil; cada persona solo puede crear el suyo, inactivo y sin permisos
+      allow create: if isAdmin() || (
+        signedIn()
+        && request.auth.uid == uid
+        && request.resource.data.rol == 'usuario'
+        && request.resource.data.activo == false
+        && request.resource.data.permisos.xml == false
+        && request.resource.data.permisos.seguimiento == false
+        && request.resource.data.permisos.editar == false
+        && request.resource.data.permisos.auditoria == false
+        && request.resource.data.permisos.eliminar == false
+      );
+
+      // Nadie salvo el super administrador puede modificar el perfil del super administrador
+      allow update: if isSuper() || (isAdmin() && resource.data.email != 'matiasmart7@gmail.com');
+
+      allow delete: if false;
+    }
+
+    match /institutions/{id} {
+      allow read: if isActive();
+      allow create: if can('editar');
+
+      // Con "seguimiento" solo se pueden tocar comentarios e historial
+      allow update: if can('editar')
+        || (can('seguimiento') && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comentarios', 'historial']));
+
+      allow delete: if can('eliminar');
+    }
+  }
+}
