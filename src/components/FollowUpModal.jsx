@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import RichText from './RichText';
 import ConfirmationModal from './ConfirmationModal';
 import { toggleWrap } from '../utils/richText';
+import { formatDateTime } from '../utils/dateUtils';
 import { useToast } from '../context/ToastContext';
 
 const CloseIcon = () => (
@@ -127,7 +128,7 @@ const FollowUpModal = ({ isOpen, onClose, institution, onAddComment, onDeleteCom
                     </button>
                     <RichText text={comment.texto} className="text-gray-800 dark:text-gray-200" />
                     <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 text-right">
-                      Por <strong className="text-gray-800 dark:text-gray-200">{comment.autor}</strong> el {new Date(comment.fecha).toLocaleString()}
+                      Por <strong className="text-gray-800 dark:text-gray-200">{comment.autor}</strong> el {formatDateTime(comment.fecha)}
                     </p>
                   </div>
                 ))}

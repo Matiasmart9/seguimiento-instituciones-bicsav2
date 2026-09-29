@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { APP_VERSION } from '../version';
+import { formatDateTime } from '../utils/dateUtils';
 import ThemeToggle from './ThemeToggle';
 import RichText from './RichText';
 import ConfirmationModal from './ConfirmationModal';
@@ -16,6 +18,7 @@ const Icon = ({ children, size = 18 }) => (
 const BackIcon = () => <Icon><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></Icon>;
 const PrintIcon = () => <Icon><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></Icon>;
 const ExcelIcon = () => <Icon><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></Icon>;
+const MenuIcon = () => <Icon size={16}><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></Icon>;
 const SearchIcon = () => <Icon size={16}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></Icon>;
 
 const LEVEL_STYLES = {
@@ -37,8 +40,28 @@ const idleText = (isoDate) => {
 const LogoutIcon = () => <Icon size={16}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></Icon>;
 
 // onBack: solo si el usuario puede volver al panel · onLogout: para quienes solo ven el reporte
-const ReportView = ({ institutions, onBack, onLogout, userEmail }) => {
+const ReportView = ({ institutions, onBack, onLogout, userName }) => {
   const [confirmLogout, setConfirmLogout] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  // Cierra el menú al hacer clic fuera o con Escape
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onPointerDown = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+    };
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [menuOpen]);
+
   const toast = useToast();
   const [group, setGroup] = useState('todos');
   const [searchText, setSearchText] = useState('');
@@ -83,20 +106,55 @@ const ReportView = ({ institutions, onBack, onLogout, userEmail }) => {
                 <BackIcon /> Volver al panel
               </button>
             ) : (
-              <span className="text-sm text-white/90">{userEmail}</span>
+              <span className="text-sm sm:text-base text-white/95">
+                Bienvenido/a <strong className="font-bold">{userName}</strong>
+              </span>
             )}
             <div className="flex flex-wrap items-center gap-2">
               <ThemeToggle />
               <button onClick={handleExport} disabled={exporting || shown === 0} className="bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white text-sm font-semibold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-colors">
                 <ExcelIcon /> {exporting ? 'Exportando...' : 'Exportar Excel'}
               </button>
-              <button onClick={() => window.print()} className="bg-gray-700 hover:bg-gray-800 text-white text-sm font-semibold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-colors">
-                <PrintIcon /> Imprimir
-              </button>
-              {onLogout && (
-                <button onClick={() => setConfirmLogout(true)} className="bg-white/20 hover:bg-white/30 text-white text-sm font-semibold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-colors">
-                  <LogoutIcon /> Cerrar sesión
+              {/* Quien solo ve el reporte no imprime: tiene Exportar Excel y el Menú */}
+              {!onLogout && (
+                <button onClick={() => window.print()} className="bg-gray-700 hover:bg-gray-800 text-white text-sm font-semibold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-colors">
+                  <PrintIcon /> Imprimir
                 </button>
+              )}
+              {onLogout && (
+                <div className="relative" ref={menuRef}>
+                  <button
+                    onClick={() => setMenuOpen((open) => !open)}
+                    aria-haspopup="menu"
+                    aria-expanded={menuOpen}
+                    className="bg-gray-600 hover:bg-gray-700 text-white text-sm font-semibold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-colors"
+                  >
+                    <MenuIcon />
+                    <span>Menú</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`transition-transform ${menuOpen ? 'rotate-180' : ''}`}>
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </button>
+
+                  {menuOpen && (
+                    <div role="menu" className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden z-30">
+                      <button
+                        role="menuitem"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          setConfirmLogout(true);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-200 hover:bg-red-50 dark:hover:bg-gray-700 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                      >
+                        <LogoutIcon />
+                        Cerrar Sesión
+                      </button>
+                      <div className="border-t border-gray-200 dark:border-gray-700 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400">
+                        {APP_VERSION}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -194,7 +252,7 @@ const ReportView = ({ institutions, onBack, onLogout, userEmail }) => {
                               <>
                                 <RichText text={last.texto} className="text-gray-700 dark:text-gray-200 leading-snug" />
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                  Por {last.autor} · {new Date(last.fecha).toLocaleString('es-PY')} · <span className="font-medium">{idleText(last.fecha)}</span>
+                                  Por {last.autor} · {formatDateTime(last.fecha)} · <span className="font-medium">{idleText(last.fecha)}</span>
                                   {inst.comentarios.length > 1 && <> · {inst.comentarios.length} comentarios en total</>}
                                 </p>
                               </>

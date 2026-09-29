@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { AUDIT_ACTIONS, buildTimeline } from '../utils/audit';
+import { formatDateTime } from '../utils/dateUtils';
 
 const CloseIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -70,7 +71,7 @@ const AuditModal = ({ isOpen, onClose, institution }) => {
                         <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                           <span className="font-semibold text-sm text-gray-900 dark:text-white">{meta.label}</span>
                           <time className="text-xs text-gray-500 dark:text-gray-400" dateTime={entry.fecha}>
-                            {new Date(entry.fecha).toLocaleString()}
+                            {formatDateTime(entry.fecha)}
                           </time>
                         </div>
                         {entry.detalle && (

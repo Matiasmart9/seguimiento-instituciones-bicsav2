@@ -77,7 +77,7 @@ const AccessBlocked = ({ email, pending, onLogout }) => (
 function App() {
   const toast = useToast();
   const { user, loading: authLoading } = useAuth();
-  const { access, loading: accessLoading } = useAccess(user);
+  const { access, profile, loading: accessLoading } = useAccess(user);
   const [view, setView] = useState('panel');
   const [filters, setFiltersState] = useState(DEFAULT_FILTERS);
   const [currentPage, setCurrentPage] = useState(1);
@@ -228,7 +228,7 @@ function App() {
           institutions={institutions}
           onBack={access.can.xml ? () => setView('panel') : undefined}
           onLogout={access.can.xml ? undefined : handleLogout}
-          userEmail={user.email}
+          userName={profile?.nombre || user.email}
         />
       </Suspense>
     );

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { APP_VERSION } from '../version';
 import { MailIcon, ShieldIcon, EyeIcon, EyeOffIcon } from './Icons';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../firebase/firebaseConfig';
 import { Renderer, Program, Mesh, Triangle, Vec2 } from 'ogl';
 
@@ -166,125 +166,229 @@ void main(){
   return <canvas ref={ref} style={{ width: '100%', height: '100%', display: 'block' }} />;
 };
 
-// Componente Login
-const Login = () => {
-  const [email, setEmail] = useState('');
+// ---- Login ----
+const REMEMBER_KEY = 'bicsa_login_email';
+
+const readRememberedEmail = () => {
+  try {
+    return localStorage.getItem(REMEMBER_KEY) || '';
+  } catch {
+    return '';
+  }
+};
+
+const Glyph = ({ size = 20, children }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    {children}
+  </svg>
+);
+
+const FEATURES = [
+  { title: 'Seguimiento completo', text: 'Estados, vencimientos y alertas de cada institución.', icon: <><line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" /></> },
+  { title: 'Comentarios y auditoría', text: 'Todo el historial de movimientos, con usuario y fecha.', icon: <><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></> },
+  { title: 'Reportes para el área comercial', text: 'Último comentario por institución, listo para exportar.', icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></> },
+];
+
+const AUTH_MESSAGES = {
+  'auth/invalid-email': 'El formato del correo no es válido.',
+  'auth/invalid-credential': 'Correo o contraseña incorrectos.',
+  'auth/user-not-found': 'Correo o contraseña incorrectos.',
+  'auth/wrong-password': 'Correo o contraseña incorrectos.',
+  'auth/user-disabled': 'Esta cuenta fue inhabilitada. Comunícate con un administrador.',
+  'auth/too-many-requests': 'Demasiados intentos fallidos. Espera unos minutos e inténtalo de nuevo.',
+  'auth/network-request-failed': 'Error de conexión. Verifica tu internet.',
+};
+
+const inputClass =
+  'w-full h-12 pl-11 pr-3 rounded-xl border border-gray-300 bg-white/90 text-gray-900 placeholder-gray-400 transition focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20';
+
+// hueShift 20 = azul; otros tonos del fondo animado: 180 verde, 240 rojo, 300 magenta
+const Login = ({ hueShift = 20 }) => {
+  const [email, setEmail] = useState(readRememberedEmail);
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [remember, setRemember] = useState(() => Boolean(readRememberedEmail()));
   const [showPassword, setShowPassword] = useState(false);
+  const [capsLock, setCapsLock] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setInfo('');
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email.trim(), password);
+      try {
+        if (remember) localStorage.setItem(REMEMBER_KEY, email.trim());
+        else localStorage.removeItem(REMEMBER_KEY);
+      } catch {
+        // sin almacenamiento disponible: no pasa nada
+      }
     } catch (err) {
       console.error('Error de login:', err.code);
-      let errorMessage = 'Error de autenticación. Verifica tus credenciales.';
-      
-      if (err.code === 'auth/invalid-email') {
-        errorMessage = 'El formato del email es inválido.';
-      } else if (err.code === 'auth/user-not-found') {
-        errorMessage = 'No existe un usuario con este email.';
-      } else if (err.code === 'auth/wrong-password') {
-        errorMessage = 'La contraseña es incorrecta.';
-      } else if (err.code === 'auth/too-many-requests') {
-        errorMessage = 'Demasiados intentos fallidos. Intenta más tarde.';
-      } else if (err.code === 'auth/network-request-failed') {
-        errorMessage = 'Error de conexión. Verifica tu internet.';
-      }
-      
-      setError(errorMessage);
+      setError(AUTH_MESSAGES[err.code] || 'No se pudo iniciar sesión. Verifica tus datos e inténtalo de nuevo.');
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-  <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-    {/* Background animado DarkVeil */}
-    <div className="absolute inset-0 w-full h-full bg-black"> {/* Agregué bg-black */}
-      <DarkVeil 
-        hueShift={180}
-        noiseIntensity={0.03}
-        scanlineIntensity={0.15}
-        speed={1.0}
-        scanlineFrequency={1.5}
-        warpAmount={0.5}
-        resolutionScale={1} // Cambiar a 1 para mejor rendimiento
-      />
-    </div>
-    
-    {/* Overlay oscuro para mejorar legibilidad */}
-    <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+  const handleForgot = async () => {
+    setError('');
+    setInfo('');
+    if (!email.trim()) {
+      setError('Escribe tu correo arriba y vuelve a pulsar "¿Olvidaste tu contraseña?".');
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      setInfo('Si el correo está registrado, te enviamos un enlace para restablecer tu contraseña.');
+    } catch (err) {
+      console.error('Error al restablecer contraseña:', err.code);
+      setError(AUTH_MESSAGES[err.code] || 'No se pudo enviar el correo. Inténtalo más tarde.');
+    }
+  };
 
-      {/* Contenido del login */}
-      <div className="relative z-10 bg-white bg-opacity-95 backdrop-blur-sm p-8 rounded-lg shadow-2xl w-96">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
-          Seguimiento XML Instituciones BICSA
-        </h2>
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="flex items-center gap-1.5 text-sm font-bold text-gray-700 mb-1">
-              <MailIcon size={16} className="text-orange-500" /> Correo
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
-              required
-            />
+  return (
+    <div className="min-h-screen relative overflow-hidden bg-black flex items-center justify-center p-4 sm:p-8">
+      {/* Fondo animado */}
+      <div className="absolute inset-0">
+        <DarkVeil hueShift={hueShift} noiseIntensity={0.03} scanlineIntensity={0.15} speed={1.0} scanlineFrequency={1.5} warpAmount={0.5} resolutionScale={1} />
+      </div>
+      <div className="absolute inset-0 bg-gradient-to-br from-black/55 via-black/25 to-blue-900/30"></div>
+
+      <div className="relative z-10 w-full max-w-5xl grid lg:grid-cols-2 gap-10 items-center">
+        {/* Panel de marca (solo pantallas grandes) */}
+        <section className="hidden lg:block text-white pr-6">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 shadow-lg shadow-orange-500/30 mb-6">
+            <Glyph size={28}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><polyline points="9 15 11 17 15 13" /></Glyph>
           </div>
-          <div>
-            <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1">
-              <ShieldIcon size={16} className="text-orange-500" /> Contraseña
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-3 pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 bg-white"
-                required
-              />
+          <h1 className="text-4xl font-bold leading-tight tracking-tight">
+            Seguimiento XML<br />Instituciones <span className="text-orange-400">BICSA</span>
+          </h1>
+          <p className="mt-3 text-lg text-white/75">Control validación de XML de instituciones en un solo lugar.</p>
+
+          <ul className="mt-8 space-y-5">
+            {FEATURES.map((f) => (
+              <li key={f.title} className="flex items-start gap-4">
+                <span className="shrink-0 w-10 h-10 rounded-xl bg-white/10 border border-white/15 backdrop-blur flex items-center justify-center text-orange-300">
+                  <Glyph>{f.icon}</Glyph>
+                </span>
+                <div>
+                  <p className="font-semibold">{f.title}</p>
+                  <p className="text-sm text-white/65">{f.text}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Formulario */}
+        <section className="w-full max-w-md mx-auto lg:mx-0 lg:ml-auto">
+          <div className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl ring-1 ring-white/40 p-7 sm:p-9">
+            {/* Marca compacta para móvil */}
+            <div className="lg:hidden flex items-center gap-3 mb-6">
+              <span className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-md">
+                <Glyph size={22}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><polyline points="9 15 11 17 15 13" /></Glyph>
+              </span>
+              <span className="font-bold text-gray-900 leading-tight">Seguimiento XML<br />Instituciones BICSA</span>
+            </div>
+
+            <h2 className="text-2xl font-bold text-gray-900 text-center">Bienvenido/a</h2>
+            <p className="text-gray-500 mt-1 mb-6 text-center">Ingresa con tu cuenta para continuar</p>
+
+            <form onSubmit={handleLogin} className="space-y-5">
+              <div>
+                <label htmlFor="login-email" className="block text-sm font-semibold text-gray-700 mb-1.5">Correo</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-orange-500 pointer-events-none"><MailIcon size={18} /></span>
+                  <input id="login-email" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@empresa.com" className={inputClass} required autoFocus={!email} />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="login-password" className="block text-sm font-semibold text-gray-700 mb-1.5">Contraseña</label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-orange-500 pointer-events-none"><ShieldIcon size={18} /></span>
+                  <input
+                    id="login-password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyUp={(e) => setCapsLock(e.getModifierState && e.getModifierState('CapsLock'))}
+                    onBlur={() => setCapsLock(false)}
+                    placeholder="••••••••"
+                    className={`${inputClass} pr-12`}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                    className="absolute inset-y-0 right-0 px-3.5 flex items-center text-gray-500 hover:text-orange-600 focus:outline-none focus-visible:text-orange-600"
+                  >
+                    {showPassword ? <EyeOffIcon size={19} /> : <EyeIcon size={19} />}
+                  </button>
+                </div>
+                {capsLock && (
+                  <p className="mt-1.5 text-xs font-medium text-amber-700 flex items-center gap-1.5">
+                    <Glyph size={14}><path d="M12 19V5" /><polyline points="5 12 12 5 19 12" /></Glyph>
+                    Bloq Mayús está activado
+                  </p>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <label className="flex items-center gap-2 text-gray-600 cursor-pointer select-none">
+                  <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} className="w-4 h-4 rounded border-gray-300 accent-orange-500" />
+                  Recordar mi correo
+                </label>
+                <button type="button" onClick={handleForgot} className="font-medium text-orange-600 hover:text-orange-700 hover:underline focus:outline-none focus-visible:underline">
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
+
+              {error && (
+                <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                  <span className="mt-0.5 shrink-0"><Glyph size={16}><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></Glyph></span>
+                  <p className="font-medium">{error}</p>
+                </div>
+              )}
+              {info && (
+                <div role="status" className="flex items-start gap-2.5 rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+                  <span className="mt-0.5 shrink-0"><Glyph size={16}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></Glyph></span>
+                  <p className="font-medium">{info}</p>
+                </div>
+              )}
+
               <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                className="absolute inset-y-0 right-0 px-3 flex items-center text-gray-500 hover:text-orange-600 focus:outline-none"
+                type="submit"
+                disabled={loading}
+                className="w-full h-12 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold shadow-lg shadow-orange-500/30 transition-all hover:shadow-orange-500/40 active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 focus:outline-none focus-visible:ring-4 focus-visible:ring-orange-500/40"
               >
-                {showPassword ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
+                {loading ? (
+                  <>
+                    <span className="animate-spin rounded-full h-5 w-5 border-2 border-white/40 border-t-white"></span>
+                    Iniciando sesión...
+                  </>
+                ) : (
+                  <>
+                    Iniciar sesión
+                    <Glyph size={18}><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></Glyph>
+                  </>
+                )}
               </button>
-            </div>
+            </form>
+
+            <p className="mt-7 text-center text-xs text-gray-400">
+              © {new Date().getFullYear()} BICSA · {APP_VERSION}
+            </p>
           </div>
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3">
-              <p className="text-red-600 text-sm font-medium">{error}</p>
-            </div>
-          )}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-orange-500 text-white py-2 rounded-md hover:bg-orange-600 transition-colors disabled:opacity-50 flex items-center justify-center font-medium"
-          >
-            {loading ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                Iniciando sesión...
-              </>
-            ) : (
-              'Iniciar Sesión'
-            )}           
-          </button>
-          <label className="block text-sm font-medium text-gray-600 mb-1 text-center">
-            {APP_VERSION}
-          </label>          
-        </form>
+        </section>
       </div>
     </div>
   );

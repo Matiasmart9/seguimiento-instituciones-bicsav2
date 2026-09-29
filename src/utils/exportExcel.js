@@ -1,4 +1,4 @@
-import { getDaysUntil } from './dateUtils';
+import { getDaysUntil, formatDateTime } from './dateUtils';
 import { stripFormatting } from './richText';
 import { getLastComment as getLatestComment } from './report';
 import {
@@ -40,7 +40,7 @@ const getDaysText = (inst) => {
 const getLastComment = (inst) => {
   if (!inst.comentarios || inst.comentarios.length === 0) return 'Sin comentarios';
   const last = inst.comentarios[inst.comentarios.length - 1];
-  return `${stripFormatting(last.texto)} - Por ${last.autor} (${new Date(last.fecha).toLocaleString('es-PY')})`;
+  return `${stripFormatting(last.texto)} - Por ${last.autor} (${formatDateTime(last.fecha)})`;
 };
 
 const prepareInstitutionData = (inst) => ({
@@ -51,7 +51,6 @@ const prepareInstitutionData = (inst) => ({
   'Fecha de Vencimiento': formatDate(inst.fechaVencimiento),
   'Días hasta Vencimiento': getDaysText(inst),
   'Motivo Suspensión': inst.motivoSuspension || 'N/A',
-  'Cantidad de Comentarios': inst.comentarios?.length || 0,
   'Último Comentario': getLastComment(inst),
 });
 
@@ -160,8 +159,7 @@ export async function exportReportToExcel(groups) {
         'Días hasta Vencimiento': getDaysText(inst),
         'Último Comentario': last ? stripFormatting(last.texto) : 'Sin comentarios',
         'Comentado por': last ? last.autor : 'N/A',
-        'Fecha del Comentario': last ? new Date(last.fecha).toLocaleString('es-PY') : 'N/A',
-        'Total de Comentarios': inst.comentarios?.length || 0,
+        'Fecha del Comentario': last ? formatDateTime(last.fecha) : 'N/A',
       };
     });
     const sheetName = group.title.replace(/[/\\?*[\]:]/g, '-').slice(0, 31);

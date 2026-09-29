@@ -1,3 +1,15 @@
+// Fecha y hora en formato 24 horas (ej. 24/8/2026, 14:38:46)
+export const formatDateTime = (isoDate) =>
+  new Date(isoDate).toLocaleString('es-PY', {
+    day: 'numeric',
+    month: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  });
+
 export const getDaysUntil = (dateString) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
