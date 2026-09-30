@@ -4,7 +4,7 @@ Aplicación web para el seguimiento de las instituciones que atraviesan el proce
 estados y vencimientos, comentarios de seguimiento, auditoría de movimientos, reportes para el área comercial y
 gestión de usuarios con permisos.
 
-**Versión actual:** V1.1 (se define en `src/version.js`).
+**Versión actual:** V1.2 (se define en `src/version.js`).
 
 ## Contenido
 
