@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { APP_VERSION } from '../version';
+import { IDLE_FLAG_KEY } from '../hooks/useIdleLogout';
 import { MailIcon, ShieldIcon, EyeIcon, EyeOffIcon } from './Icons';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../firebase/firebaseConfig';
@@ -177,6 +178,14 @@ const readRememberedEmail = () => {
   }
 };
 
+const wasIdleLogout = () => {
+  try {
+    return localStorage.getItem(IDLE_FLAG_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
+
 const Glyph = ({ size = 20, children }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     {children}
@@ -211,7 +220,18 @@ const Login = ({ hueShift = 20 }) => {
   const [capsLock, setCapsLock] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [info, setInfo] = useState('');
+  const [info, setInfo] = useState(() =>
+    wasIdleLogout() ? 'Tu sesión se cerró por inactividad. Inicia sesión de nuevo para continuar.' : ''
+  );
+
+  // El aviso se muestra una sola vez
+  useEffect(() => {
+    try {
+      localStorage.removeItem(IDLE_FLAG_KEY);
+    } catch {
+      // sin almacenamiento disponible: no pasa nada
+    }
+  }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
