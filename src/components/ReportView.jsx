@@ -252,9 +252,7 @@ const ReportView = ({ institutions, onBack, onLogout, userName }) => {
                               <>
                                 <RichText text={last.texto} className="text-gray-700 dark:text-gray-200 leading-snug" />
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                  Por {last.autor} · {formatDateTime(last.fecha)} · <span className="font-medium">{idleText(last.fecha)}</span>
-                                  {inst.comentarios.length > 1 && <> · {inst.comentarios.length} comentarios en total</>}
-                                </p>
+                                  Por {last.autor} · {formatDateTime(last.fecha)} · <span className="font-medium">{idleText(last.fecha)}</span>                                </p>
                               </>
                             ) : (
                               <span className="italic text-gray-400">Sin comentarios</span>
