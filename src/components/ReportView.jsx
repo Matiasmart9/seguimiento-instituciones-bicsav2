@@ -30,11 +30,17 @@ const LEVEL_STYLES = {
 
 const formatDate = (d) => (d ? new Date(d + 'T00:00:00').toLocaleDateString('es-PY') : 'N/A');
 
-const idleText = (isoDate) => {
+// Antigüedad del último comentario, resaltada según cuánto tiempo pasó sin actividad
+const idleInfo = (isoDate) => {
   const days = daysSince(isoDate);
-  if (days <= 0) return 'hoy';
-  if (days === 1) return 'hace 1 día';
-  return `hace ${days} días`;
+  const text = days <= 0 ? 'Hoy' : days === 1 ? 'Hace 1 día' : `Hace ${days} días`;
+  const tone =
+    days <= 7
+      ? 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300'
+      : days <= 30
+        ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300'
+        : 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300';
+  return { text, tone };
 };
 
 const LogoutIcon = () => <Icon size={16}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></Icon>;
@@ -231,7 +237,7 @@ const ReportView = ({ institutions, onBack, onLogout, userName }) => {
                     <tr>
                       <th className="px-4 py-3 font-semibold">Institución</th>
                       <th className="px-4 py-3 font-semibold whitespace-nowrap">Fechas</th>
-                      <th className="px-4 py-3 font-semibold whitespace-nowrap">Días</th>
+                      <th className="px-4 py-3 font-semibold whitespace-nowrap">60 Días Plazo</th>
                       <th className="px-4 py-3 font-semibold min-w-[15rem]">Último comentario</th>
                     </tr>
                   </thead>
@@ -252,7 +258,7 @@ const ReportView = ({ institutions, onBack, onLogout, userName }) => {
                               <>
                                 <RichText text={last.texto} className="text-gray-700 dark:text-gray-200 leading-snug" />
                                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                  Por {last.autor} · {formatDateTime(last.fecha)} · <span className="font-medium">{idleText(last.fecha)}</span>                                </p>
+                                  Por {last.autor} · {formatDateTime(last.fecha)} · <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${idleInfo(last.fecha).tone}`}>{idleInfo(last.fecha).text}</span>                                </p>
                               </>
                             ) : (
                               <span className="italic text-gray-400">Sin comentarios</span>
