@@ -39,6 +39,7 @@ gestión de usuarios con permisos.
 
 **Otros**
 - Modo claro / oscuro, widget del clima, avisos (toasts) y confirmación para acciones destructivas y para cerrar sesión.
+- **Cierre de sesión por inactividad:** tras 15 minutos sin usar el portal la sesión se cierra sola, con un aviso de 60 segundos antes ("Seguir conectado"). La actividad se comparte entre pestañas. Los tiempos se ajustan en `src/hooks/useIdleLogout.js` (`IDLE_TIMEOUT_MINUTES`, `IDLE_WARNING_SECONDS`).
 - Interfaz adaptada a móvil y tablet (los iconos de acción de las tarjetas están siempre visibles en pantallas táctiles).
 
 ## Roles y permisos
