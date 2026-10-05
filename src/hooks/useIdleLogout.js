@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 // Cierre de sesión automático por inactividad
-export const IDLE_TIMEOUT_MINUTES = 15;
+export const IDLE_TIMEOUT_MINUTES = 30;
 export const IDLE_WARNING_SECONDS = 60;
 
 export const ACTIVITY_KEY = 'bicsa_last_activity';

@@ -3,7 +3,7 @@ import { auth } from '../firebase/firebaseConfig';
 import { useAuth } from '../hooks/useAuth';
 import { useIdleLogout, IDLE_TIMEOUT_MINUTES } from '../hooks/useIdleLogout';
 
-// Cierra la sesión tras 15 minutos sin actividad, avisando un minuto antes.
+// Cierra la sesión tras 30 minutos sin actividad, avisando un minuto antes.
 // Se monta una sola vez, fuera de las vistas, así funciona en todas las pantallas.
 const IdleGuard = () => {
   const { user } = useAuth();
