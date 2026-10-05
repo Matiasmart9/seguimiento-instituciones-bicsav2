@@ -28,6 +28,13 @@ const LEVEL_STYLES = {
   ok: 'text-gray-700 dark:text-gray-300',
 };
 
+const BAR_STYLES = {
+  expired: 'bg-red-500',
+  critical: 'bg-orange-500',
+  warning: 'bg-yellow-500',
+  ok: 'bg-green-500',
+};
+
 const formatDate = (d) => (d ? new Date(d + 'T00:00:00').toLocaleDateString('es-PY') : 'N/A');
 
 // Antigüedad del último comentario, resaltada según cuánto tiempo pasó sin actividad
@@ -252,7 +259,18 @@ const ReportView = ({ institutions, onBack, onLogout, userName }) => {
                             <div><span className="text-xs text-gray-500 dark:text-gray-400">Ingreso:</span> {formatDate(inst.fechaIngreso)}</div>
                             <div><span className="text-xs text-gray-500 dark:text-gray-400">Vence:</span> {formatDate(inst.fechaVencimiento)}</div>
                           </td>
-                          <td className={`px-4 py-3 whitespace-nowrap ${days ? LEVEL_STYLES[days.level] : 'text-gray-400'}`}>{days ? days.text : 'N/A'}</td>
+                          <td className="px-4 py-3 whitespace-nowrap min-w-[10rem]">
+                            {days ? (
+                              <>
+                                <div className={LEVEL_STYLES[days.level]}>{days.text}</div>
+                                <div className="mt-1.5 h-1.5 w-full rounded-full bg-gray-200 dark:bg-gray-600 overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={days.progress} aria-label="Avance del plazo de 60 días">
+                                  <div className={`h-full rounded-full ${BAR_STYLES[days.level]}`} style={{ width: `${days.progress}%` }} />
+                                </div>
+                              </>
+                            ) : (
+                              <span className="text-gray-400">N/A</span>
+                            )}
+                          </td>
                           <td className="px-4 py-3">
                             {last ? (
                               <>

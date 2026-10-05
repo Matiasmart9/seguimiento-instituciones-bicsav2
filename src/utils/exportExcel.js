@@ -1,6 +1,6 @@
 import { getDaysUntil, formatDateTime } from './dateUtils';
 import { stripFormatting } from './richText';
-import { getLastComment as getLatestComment } from './report';
+import { getLastComment as getLatestComment, describeDays } from './report';
 import {
   ESTADO_VALIDACION,
   ESTADO_REVALIDACION,
@@ -156,7 +156,7 @@ export async function exportReportToExcel(groups) {
         'Estado': inst.estado,
         'Fecha de Ingreso': formatDate(inst.fechaIngreso),
         'Fecha de Vencimiento': formatDate(inst.fechaVencimiento),
-        'Días hasta Vencimiento': getDaysText(inst),
+        '60 Días Plazo': describeDays(inst)?.text ?? 'N/A',
         'Último Comentario': last ? stripFormatting(last.texto) : 'Sin comentarios',
         'Comentado por': last ? last.autor : 'N/A',
         'Fecha del Comentario': last ? formatDateTime(last.fecha) : 'N/A',

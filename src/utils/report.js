@@ -26,13 +26,27 @@ export const daysSince = (isoDate) => {
   return Math.round((today - then) / 86400000);
 };
 
-// Texto y nivel de urgencia de los días de vencimiento (null si no aplica al estado)
+// Plazo que se otorga a la institución para entregar el XML
+export const PLAZO_DIAS = 60;
+
+const pad2 = (n) => String(n).padStart(2, '0');
+
+// Avance del plazo de 60 días (null si no aplica al estado). El plazo termina en la fecha de vencimiento:
+// - dentro del plazo: "06 Días de 60 Días" (el día 60 es el del vencimiento)
+// - pasado el plazo: "01 días vencidos"
+// `progress` (0-100) alimenta la barra de avance.
 export const describeDays = (inst) => {
   if (!countsDays(inst)) return null;
-  const days = getDaysUntil(inst.fechaVencimiento);
-  if (days < 0) return { text: `${Math.abs(days)} días vencidos`, level: 'expired' };
-  if (days === 0) return { text: 'Vence hoy', level: 'critical' };
-  return { text: `${days} días`, level: days <= 5 ? 'critical' : days <= 8 ? 'warning' : 'ok' };
+  const left = getDaysUntil(inst.fechaVencimiento);
+
+  if (left < 0) return { text: `${pad2(Math.abs(left))} días vencidos`, level: 'expired', progress: 100 };
+
+  const elapsed = Math.min(Math.max(PLAZO_DIAS - left, 0), PLAZO_DIAS);
+  return {
+    text: `${pad2(elapsed)} Días de ${PLAZO_DIAS} Días`,
+    level: left <= 5 ? 'critical' : left <= 8 ? 'warning' : 'ok',
+    progress: Math.round((elapsed / PLAZO_DIAS) * 100),
+  };
 };
 
 // Vencidas primero (más atrasadas arriba), luego por nombre
