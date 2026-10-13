@@ -1,6 +1,7 @@
 import { getDaysUntil, formatDateTime } from './dateUtils';
 import { stripFormatting } from './richText';
 import { getLastComment as getLatestComment, describeDays } from './report';
+import { ACCESS_EVENTS } from './accessLog';
 import {
   ESTADO_VALIDACION,
   ESTADO_REVALIDACION,
@@ -167,6 +168,22 @@ export async function exportReportToExcel(groups) {
   }
 
   await download(wb, `Reporte_Instituciones_${dateStamp()}.xlsx`);
+}
+
+// Registro de accesos (los que se ven filtrados en pantalla)
+export async function exportAccessLogToExcel(logs) {
+  const ExcelJS = await loadExcelJS();
+  const rows = logs.map((log) => ({
+    'Fecha y Hora': formatDateTime(log.ts.toISOString()),
+    'Usuario': log.nombre || log.email,
+    'Correo': log.email,
+    'Evento': ACCESS_EVENTS[log.evento] || log.evento,
+    'Dispositivo': log.dispositivo || 'N/A',
+  }));
+
+  const wb = new ExcelJS.Workbook();
+  addSheet(wb, 'Accesos', rows, '1D4ED8');
+  await download(wb, `Registro_Accesos_${dateStamp()}.xlsx`);
 }
 
 export async function exportDetailToExcel(title, institutions) {

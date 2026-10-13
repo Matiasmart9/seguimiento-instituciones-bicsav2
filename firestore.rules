@@ -75,5 +75,20 @@ service cloud.firestore {
 
       allow delete: if can('eliminar');
     }
+
+    // Registro de accesos: cualquier cuenta con sesión puede registrar SUS propios inicios y cierres de sesión
+    // (la hora la fija el servidor); solo los administradores pueden leerlo y nadie puede modificarlo ni borrarlo.
+    match /accessLogs/{id} {
+      allow read: if isAdmin();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['uid', 'email', 'evento', 'dispositivo', 'ts'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.evento in ['login', 'logout', 'timeout']
+        && request.resource.data.dispositivo is string
+        && request.resource.data.dispositivo.size() <= 200
+        && request.resource.data.ts == request.time;
+      allow update, delete: if false;
+    }
   }
 }

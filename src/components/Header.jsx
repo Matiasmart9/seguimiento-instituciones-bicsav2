@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { APP_VERSION } from '../version';
 import { exportAllToExcel } from '../utils/exportExcel';
 import { useToast } from '../context/ToastContext';
+import { useInstallPrompt } from '../hooks/useInstallPrompt';
 import ThemeToggle from './ThemeToggle';
 import WeatherWidget from './WeatherWidget';
 import ConfirmationModal from './ConfirmationModal';
@@ -61,8 +62,24 @@ const UsersIcon = () => (
   </svg>
 );
 
-// canAdd: puede agregar instituciones · onOpenUsers: solo se pasa a los administradores
-const Header = ({ onAddInstitution, onLogout, onOpenReport, onOpenUsers, canAdd = true, institutions }) => {
+const AccessLogIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="10"></circle>
+    <polyline points="12 6 12 12 16 14"></polyline>
+  </svg>
+);
+
+const InstallIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+    <polyline points="7 10 12 15 17 10"></polyline>
+    <line x1="12" y1="15" x2="12" y2="3"></line>
+  </svg>
+);
+
+// canAdd: puede agregar instituciones · onOpenUsers y onOpenAccessLog: solo se pasan a los administradores
+const Header = ({ onAddInstitution, onLogout, onOpenReport, onOpenUsers, onOpenAccessLog, canAdd = true, institutions }) => {
+  const { canInstall, install } = useInstallPrompt();
   const toast = useToast();
   const [exporting, setExporting] = useState(false);
 
@@ -175,6 +192,32 @@ const Header = ({ onAddInstitution, onLogout, onOpenReport, onOpenUsers, canAdd 
                     >
                       <UsersIcon />
                       Usuarios
+                    </button>
+                  )}
+                  {onOpenAccessLog && (
+                    <button
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        onOpenAccessLog();
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-700 hover:text-orange-600 dark:hover:text-orange-400 transition-colors border-b border-gray-100 dark:border-gray-700"
+                    >
+                      <AccessLogIcon />
+                      Registro de accesos
+                    </button>
+                  )}
+                  {canInstall && (
+                    <button
+                      role="menuitem"
+                      onClick={() => {
+                        setMenuOpen(false);
+                        install();
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-700 hover:text-orange-600 dark:hover:text-orange-400 transition-colors border-b border-gray-100 dark:border-gray-700"
+                    >
+                      <InstallIcon />
+                      Instalar aplicación
                     </button>
                   )}
                   <button

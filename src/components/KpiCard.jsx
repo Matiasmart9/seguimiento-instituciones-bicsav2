@@ -8,7 +8,11 @@ const getCardColors = (title) => {
       border: 'border-l-4 border-blue-500 dark:border-blue-400', 
       text: 'text-blue-600 dark:text-blue-300' 
     },
-    'Valid. XML MiPymes': { 
+    'Total Valid. XML': {
+      border: 'border-l-4 border-sky-500 dark:border-sky-400',
+      text: 'text-sky-600 dark:text-sky-300'
+    },
+    'Valid. XML MiPymes': {
       border: 'border-l-4 border-green-500 dark:border-green-400', 
       text: 'text-green-600 dark:text-green-300' 
     },

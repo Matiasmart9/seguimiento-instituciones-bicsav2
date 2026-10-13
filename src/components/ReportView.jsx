@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { APP_VERSION } from '../version';
+import { useInstallPrompt } from '../hooks/useInstallPrompt';
 import { formatDateTime } from '../utils/dateUtils';
 import ThemeToggle from './ThemeToggle';
 import RichText from './RichText';
@@ -53,7 +54,10 @@ const idleInfo = (isoDate) => {
 const LogoutIcon = () => <Icon size={16}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></Icon>;
 
 // onBack: solo si el usuario puede volver al panel · onLogout: para quienes solo ven el reporte
+const InstallIcon = () => <Icon size={16}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></Icon>;
+
 const ReportView = ({ institutions, onBack, onLogout, userName }) => {
+  const { canInstall, install } = useInstallPrompt();
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -151,6 +155,19 @@ const ReportView = ({ institutions, onBack, onLogout, userName }) => {
 
                   {menuOpen && (
                     <div role="menu" className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden z-30">
+                      {canInstall && (
+                        <button
+                          role="menuitem"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            install();
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-200 hover:bg-orange-50 dark:hover:bg-gray-700 hover:text-orange-600 dark:hover:text-orange-400 transition-colors border-b border-gray-100 dark:border-gray-700"
+                        >
+                          <InstallIcon />
+                          Instalar aplicación
+                        </button>
+                      )}
                       <button
                         role="menuitem"
                         onClick={() => {

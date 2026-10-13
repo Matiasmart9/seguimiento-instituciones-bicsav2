@@ -76,6 +76,7 @@ export const computeKpis = (institutions) => {
   const today = getToday();
   const kpis = {
     total: [],
+    validacionXml: [],
     validacionMipymes: [],
     validacionPremium: [],
     validacionPremiumPortal: [],
@@ -92,6 +93,7 @@ export const computeKpis = (institutions) => {
 
     switch (inst.estado) {
       case ESTADO_VALIDACION:
+        kpis.validacionXml.push(inst); // todas las categorías
         if (inst.categoria === 'MiPymes') kpis.validacionMipymes.push(inst);
         else if (inst.categoria === 'Premium') kpis.validacionPremium.push(inst);
         else if (inst.categoria === 'Premium/Portal-MiPymes') kpis.validacionPremiumPortal.push(inst);

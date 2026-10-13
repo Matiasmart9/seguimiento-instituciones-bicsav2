@@ -20,7 +20,7 @@ const ExcelIcon = () => (
   </svg>
 );
 
-const KpiDetailModal = ({ isOpen, onClose, title, institutions }) => {
+const KpiDetailModal = ({ isOpen, onClose, title, institutions, note }) => {
   const toast = useToast();
   if (!isOpen) return null;
 
@@ -68,6 +68,16 @@ const KpiDetailModal = ({ isOpen, onClose, title, institutions }) => {
           <p className="text-gray-500 dark:text-gray-400 mt-1">
             Total encontradas: {institutions.length}
           </p>
+          {note && (
+            <p className="mt-2 inline-flex items-center gap-2 text-sm text-sky-800 dark:text-sky-200 bg-sky-50 dark:bg-sky-900/30 border border-sky-200 dark:border-sky-800 rounded-lg px-3 py-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+              {note}
+            </p>
+          )}
         </div>
 
         <div className="flex-1 overflow-auto border border-gray-200 dark:border-gray-700 rounded-lg shadow-inner">
