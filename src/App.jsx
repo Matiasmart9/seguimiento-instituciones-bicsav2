@@ -261,7 +261,8 @@ function App() {
         institutions={institutions}
       />
       <main className="container mx-auto p-6">
-        <div className="flex flex-wrap justify-center gap-3 mb-8 px-2">
+        {/* Tarjetas en cuadrícula centrada: 5 columnas (2 filas) en pantallas grandes, 3 en tablet y 2 en móvil */}
+        <div className="grid justify-center gap-4 mb-8 px-2 [grid-template-columns:repeat(2,minmax(0,140px))] sm:[grid-template-columns:repeat(3,minmax(0,140px))] md:[grid-template-columns:repeat(5,minmax(0,140px))]">
           {KPI_CARDS.map(({ key, title, modalTitle, color, note }) => (
             <KpiCard
               key={key}
