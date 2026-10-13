@@ -4,7 +4,7 @@ Aplicación web para el seguimiento de las instituciones que atraviesan el proce
 estados y vencimientos, comentarios de seguimiento, auditoría de movimientos, reportes para el área comercial y
 gestión de usuarios con permisos.
 
-**Versión actual:** V1.3 (se define en `src/version.js`).
+**Versión actual:** V1.4 (se define en `src/version.js`).
 
 ## Contenido
 
@@ -36,6 +36,14 @@ gestión de usuarios con permisos.
 
 **Gestión de usuarios** (Menú → Usuarios, solo administradores)
 - Alta de usuarios, activar/inhabilitar, cambio de rol y permisos con interruptores, envío de correo para restablecer la contraseña.
+
+**Registro de accesos** (Menú → Registro de accesos, solo administradores)
+- Cada inicio de sesión, cierre manual y cierre por inactividad queda guardado en la colección `accessLogs` con usuario, evento, dispositivo (navegador y sistema) y la hora fijada por el servidor. Se puede buscar, filtrar por evento y fecha, y exportar a Excel.
+- Las reglas de `firestore.rules` impiden falsificar la hora o registrar a nombre de otra persona, y nadie puede editar ni borrar los registros. No se guarda la dirección IP (un navegador no puede obtenerla de forma fiable). Recargar la página con la sesión abierta no genera un registro nuevo.
+
+**App instalable (PWA)**
+- El portal se puede instalar como aplicación: en Chrome/Edge/Android desde Menú → "Instalar aplicación" (o el icono de instalar de la barra de direcciones); en iPhone/iPad, desde Compartir → "Agregar a pantalla de inicio".
+- Archivos: `public/manifest.webmanifest`, `public/sw.js` (service worker) e iconos en `public/icons/`. El service worker solo se registra en producción, abre siempre la versión más reciente cuando hay conexión y nunca guarda datos de Firebase. Sin conexión solo muestra la pantalla de carga: los datos requieren internet.
 
 **Otros**
 - Modo claro / oscuro, widget del clima, avisos (toasts) y confirmación para acciones destructivas y para cerrar sesión.

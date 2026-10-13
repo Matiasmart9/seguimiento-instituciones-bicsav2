@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { APP_VERSION } from '../version';
 import { IDLE_FLAG_KEY } from '../hooks/useIdleLogout';
+import { logAccess } from '../utils/accessLog';
 import { MailIcon, ShieldIcon, EyeIcon, EyeOffIcon } from './Icons';
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../firebase/firebaseConfig';
@@ -241,6 +242,7 @@ const Login = ({ hueShift = 20 }) => {
 
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
+      logAccess('login'); // sin esperar: no demora la entrada
       try {
         if (remember) localStorage.setItem(REMEMBER_KEY, email.trim());
         else localStorage.removeItem(REMEMBER_KEY);

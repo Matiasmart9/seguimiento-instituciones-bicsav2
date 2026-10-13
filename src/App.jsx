@@ -1,6 +1,5 @@
 import { useState, useMemo, useCallback, lazy, Suspense } from 'react';
-import { signOut } from 'firebase/auth';
-import { auth } from './firebase/firebaseConfig';
+import { signOutWithLog } from './utils/accessLog';
 import { useAuth } from './hooks/useAuth';
 import { useInstitutions } from './hooks/useInstitutions';
 import { useAccess } from './hooks/useAccess';
@@ -19,11 +18,19 @@ const InstitutionModal = lazy(() => import('./components/InstitutionModal'));
 const FollowUpModal = lazy(() => import('./components/FollowUpModal'));
 const ReportView = lazy(() => import('./components/ReportView'));
 const UsersView = lazy(() => import('./components/UsersView'));
+const AccessLogView = lazy(() => import('./components/AccessLogView'));
 const AuditModal = lazy(() => import('./components/AuditModal'));
 const KpiDetailModal = lazy(() => import('./components/KpiDetailModal'));
 
 const KPI_CARDS = [
   { key: 'total', title: 'Total', modalTitle: 'Total de Instituciones', color: '#1D4ED8' },
+  {
+    key: 'validacionXml',
+    title: 'Total Valid. XML',
+    modalTitle: 'Total Valid. XML (todas las categorías)',
+    color: '#0EA5E9',
+    note: 'En estado Validación de XML, de cualquier categoría. No incluye las instituciones Suspendidas ni Sin Renovación.',
+  },
   { key: 'validacionMipymes', title: 'Valid. XML MiPymes', modalTitle: 'Valid. XML MiPymes', color: '#16A34A' },
   { key: 'validacionPremium', title: 'Valid. xml Premium', modalTitle: 'Valid. XML Premium', color: '#059669' },
   { key: 'validacionPremiumPortal', title: 'Valid. Premium/Portal', modalTitle: 'Valid. Premium/Portal-MiPymes', color: '#7C3AED' },
@@ -114,7 +121,7 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await signOutWithLog('logout');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
       toast.error('Error al cerrar sesión. Por favor, intenta nuevamente.');
@@ -158,8 +165,8 @@ function App() {
     setSelectedInstitution(null);
   };
 
-  const handleKpiClick = (title, instList) => {
-    setKpiModalData({ isOpen: true, title, institutions: instList });
+  const handleKpiClick = (title, instList, note) => {
+    setKpiModalData({ isOpen: true, title, institutions: instList, note });
   };
 
   const closeKpiModal = () => {
@@ -210,8 +217,16 @@ function App() {
 
   // Vista efectiva: sin acceso al panel XML, el Reporte es la vista por defecto
   let currentView = view;
-  if (currentView === 'users' && !access.isAdmin) currentView = 'report';
+  if ((currentView === 'users' || currentView === 'accesslog') && !access.isAdmin) currentView = 'report';
   if (currentView === 'panel' && !access.can.xml) currentView = 'report';
+
+  if (currentView === 'accesslog') {
+    return (
+      <Suspense fallback={<Spinner text="Cargando registro de accesos..." />}>
+        <AccessLogView onBack={() => setView('panel')} />
+      </Suspense>
+    );
+  }
 
   if (currentView === 'users') {
     return (
@@ -241,18 +256,19 @@ function App() {
         onLogout={handleLogout}
         onOpenReport={() => setView('report')}
         onOpenUsers={access.isAdmin ? () => setView('users') : undefined}
+        onOpenAccessLog={access.isAdmin ? () => setView('accesslog') : undefined}
         canAdd={access.can.editar}
         institutions={institutions}
       />
       <main className="container mx-auto p-6">
         <div className="flex flex-wrap justify-center gap-3 mb-8 px-2">
-          {KPI_CARDS.map(({ key, title, modalTitle, color }) => (
+          {KPI_CARDS.map(({ key, title, modalTitle, color, note }) => (
             <KpiCard
               key={key}
               title={title}
               value={kpiData[key].length}
               color={color}
-              onClick={() => handleKpiClick(modalTitle, kpiData[key])}
+              onClick={() => handleKpiClick(modalTitle, kpiData[key], note)}
             />
           ))}
         </div>
@@ -336,6 +352,7 @@ function App() {
             onClose={closeKpiModal}
             title={kpiModalData.title}
             institutions={kpiModalData.institutions}
+            note={kpiModalData.note}
           />
         )}
       </Suspense>

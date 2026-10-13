@@ -1,5 +1,4 @@
-import { signOut } from 'firebase/auth';
-import { auth } from '../firebase/firebaseConfig';
+import { signOutWithLog } from '../utils/accessLog';
 import { useAuth } from '../hooks/useAuth';
 import { useIdleLogout, IDLE_TIMEOUT_MINUTES } from '../hooks/useIdleLogout';
 
@@ -9,7 +8,7 @@ const IdleGuard = () => {
   const { user } = useAuth();
   const { secondsLeft, stay } = useIdleLogout({
     enabled: Boolean(user),
-    onTimeout: () => signOut(auth).catch((error) => console.error('Error al cerrar sesión por inactividad:', error)),
+    onTimeout: () => signOutWithLog('timeout').catch((error) => console.error('Error al cerrar sesión por inactividad:', error)),
   });
 
   if (!user || secondsLeft === null) return null;
@@ -31,7 +30,7 @@ const IdleGuard = () => {
         <p className="text-xs text-gray-400 mt-1">Se cierra automáticamente tras {IDLE_TIMEOUT_MINUTES} minutos sin usar el portal.</p>
         <div className="flex justify-center gap-3 mt-6">
           <button
-            onClick={() => signOut(auth)}
+            onClick={() => signOutWithLog('logout')}
             className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white font-semibold transition-colors"
           >
             Cerrar sesión
